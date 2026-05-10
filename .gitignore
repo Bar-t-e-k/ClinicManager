@@ -55,3 +55,20 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
+
+# Visual Studio / IDE
+.vs/
+*.user
+*.userosscache
+*.sln.docstates
+
+# JetBrains Rider (na wypadek, gdyby partner z zespołu go używał)
+.idea/
+*.sln.iml
+
+# Lokalne pliki konfiguracyjne (zabezpieczenie przed wyciekiem danych)
+appsettings.Development.json
+appsettings.Local.json
+
+# Testy wydajnościowe NBomber (raporty)
+nbomber-report/
