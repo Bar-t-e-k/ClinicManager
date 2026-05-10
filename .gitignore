@@ -72,3 +72,15 @@ appsettings.Local.json
 
 # Testy wydajnościowe NBomber (raporty)
 nbomber-report/
+
+# Logi aplikacji
+logs/
+*.log
+
+# SQL Server binaries
+*.mdf
+*.ldf
+
+# Ignore directory uploads
+wwwroot/uploads/*
+!wwwroot/uploads/.gitkeep
