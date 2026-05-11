@@ -27,3 +27,6 @@ jobs:
 
     - name: Test
       run: dotnet test --no-build --verbosity normal --configuration Release
+
+    - name: Build Docker Image
+      run: docker build -t clinic-manager:latest -f ./Dockerfile .

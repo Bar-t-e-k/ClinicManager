@@ -62,18 +62,18 @@ nunit-*.xml
 *.userosscache
 *.sln.docstates
 
-# JetBrains Rider (na wypadek, gdyby partner z zespołu go używał)
+# JetBrains Rider
 .idea/
 *.sln.iml
 
-# Lokalne pliki konfiguracyjne (zabezpieczenie przed wyciekiem danych)
+# local config files
 appsettings.Development.json
 appsettings.Local.json
 
-# Testy wydajnościowe NBomber (raporty)
+# NBomber
 nbomber-report/
 
-# Logi aplikacji
+# Logs
 logs/
 *.log
 
