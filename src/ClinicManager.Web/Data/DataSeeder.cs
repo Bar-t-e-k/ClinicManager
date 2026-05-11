@@ -4,7 +4,7 @@ namespace ClinicManager.Web.Data;
 
 public static class DataSeeder
 {
-    public static async Task SeedRolesAndAdminAsync(IServiceProvider serviceProvider)
+    public static async Task SeedRolesAndAdminAsync(IServiceProvider serviceProvider, IConfiguration configuration)
     {
         var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();
         var userManager = serviceProvider.GetRequiredService<UserManager<IdentityUser>>();
@@ -32,7 +32,9 @@ public static class DataSeeder
                 EmailConfirmed = true
             };
 
-            var createPowerUser = await userManager.CreateAsync(newAdmin, "Admin123!");
+            string password = configuration["SeedData:AdminPassword"] ?? throw new InvalidOperationException("Hasło administratora nie zostało skonfigurowane w User Secrets!");
+            var createPowerUser = await userManager.CreateAsync(newAdmin, password);
+
             if (createPowerUser.Succeeded)
             {
                 await userManager.AddToRoleAsync(newAdmin, "Admin");

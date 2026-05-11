@@ -58,7 +58,8 @@ using (var scope = app.Services.CreateScope())
     var services = scope.ServiceProvider;
     try
     {
-        await DataSeeder.SeedRolesAndAdminAsync(services);
+        var config = services.GetRequiredService<IConfiguration>();
+        await DataSeeder.SeedRolesAndAdminAsync(services, config);
     }
     catch (Exception ex)
     {

@@ -15,6 +15,11 @@ Projekt zaliczeniowy zrealizowany w architekturze ASP.NET Core 10 (MVC). Aplikac
 - **Raportowanie & Logowanie:** NLog, BackgroundTasks, generowanie PDF
 - **Testy & CI/CD:** xUnit, NBomber, GitHub Actions
 
+## 📋 Wymagania:
+* **.NET 10 SDK** (lub nowszy)
+* **Docker Desktop** (do bazy danych)
+* **EF Core Tools** (`dotnet tool install --global dotnet-ef`)
+
 ## 📂 Struktura katalogów
 
 - `src/ClinicManager.Web` – główny projekt webowy (MVC, Kontrolery, Widoki).
@@ -25,10 +30,14 @@ Projekt zaliczeniowy zrealizowany w architekturze ASP.NET Core 10 (MVC). Aplikac
 ## ⚙️ Uruchomienie lokalne
 
 1. Sklonuj repozytorium: `git clone https://github.com/TwojLogin/ClinicManager.git`
-2. Zaktualizuj ConnectionString w `appsettings.json` (wskazując na swój lokalny SQL Server).
+2. Skonfiguruj hasła i ConnectionString w User Secrets (patrz sekcja poniżej).
 3. Wykonaj migracje bazy danych: 
    ```bash
    dotnet ef database update --project src/ClinicManager.Web --startup-project src/ClinicManager.Web
+   ```
+4. Uruchom aplikację: 
+   ```bash
+   dotnet run --project src/ClinicManager.Web
    ```
 
 ## ⚙️ CI/CD (GitHub Actions)
@@ -52,6 +61,15 @@ Aby postawić bazę danych lokalnie, upewnij się, że masz zainstalowanego [Doc
 docker run -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=ClinicAdmin!2026" -p 1433:1433 --name clinic-sql -d mcr.microsoft.com/mssql/server:2022-latest
 ```
 
+## 🔐 Konfiguracja ConnectionString i Seed Data
+
+Aplikacja nie przechowuje haseł w plikach konfiguracyjnych. Skonfiguruj własne wpisy lokalnie:
+
+```bash
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=localhost,1433;Database=ClinicManagerDb;User Id=sa;Password=ClinicAdmin!2026;TrustServerCertificate=True" --project src/ClinicManager.Web
+dotnet user-secrets set "SeedData:AdminPassword" "Admin123!" --project src/ClinicManager.Web
+```
+
 ## 🔐 Dane do logowania (Seed Data)
 
 Aplikacja automatycznie konfiguruje system Identity i tworzy domyślnego administratora przy pierwszym uruchomieniu:
@@ -60,3 +78,7 @@ Aplikacja automatycznie konfiguruje system Identity i tworzy domyślnego adminis
 - **Hasło:** `Admin123!`
 
 **Dostępne role w systemie:** `Admin`, `Lekarz`, `Rejestratorka`.
+
+## ❓ Rozwiązywanie problemów
+* **Błąd logowania SA w Dockerze:** Upewnij się, że kontener `clinic-sql` działa (`docker ps`). Jeśli zmieniłeś hasło w komendzie `docker run`, musisz je również zaktualizować w `user-secrets`.
+* **Błąd migracji:** Jeśli `dotnet ef database update` nie działa, upewnij się, że jesteś w głównym folderze projektu i masz zainstalowane narzędzia `dotnet-ef`.
