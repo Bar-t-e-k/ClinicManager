@@ -66,7 +66,7 @@ docker run -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=ClinicAdmin!2026" -p 1433:14
 Aplikacja nie przechowuje haseł w plikach konfiguracyjnych. Skonfiguruj własne wpisy lokalnie:
 
 ```bash
-dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=localhost,1433;Database=ClinicManagerDb;User Id=sa;Password=ClinicAdmin!2026;TrustServerCertificate=True" --project src/ClinicManager.Web
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=localhost,1433;Database=ClinicManagerDb;User Id=sa;Password=ClinicAdmin!2026;TrustServerCertificate=True;MultipleActiveResultSets=true" --project src/ClinicManager.Web
 dotnet user-secrets set "SeedData:AdminPassword" "Admin123!" --project src/ClinicManager.Web
 ```
 
