@@ -2,7 +2,7 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
-# Kopiuwanie pliku projektu i przywracanie zależności (NuGet)
+# Kopiowanie pliku projektu i przywracanie zależności (NuGet)
 COPY ["src/ClinicManager.Web/ClinicManager.Web.csproj", "src/ClinicManager.Web/"]
 RUN dotnet restore "src/ClinicManager.Web/ClinicManager.Web.csproj"
 
