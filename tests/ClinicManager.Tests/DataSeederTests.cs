@@ -17,14 +17,14 @@ public class DataSeederTests
 
         var roleStoreMock = new Mock<IRoleStore<IdentityRole>>();
         var roleManagerMock = new Mock<RoleManager<IdentityRole>>(
-            roleStoreMock.Object, null, null, null, null);
+            roleStoreMock.Object, null!, null!, null!, null!);
 
         roleManagerMock.Setup(x => x.RoleExistsAsync(It.IsAny<string>())).ReturnsAsync(false);
         roleManagerMock.Setup(x => x.CreateAsync(It.IsAny<IdentityRole>())).ReturnsAsync(IdentityResult.Success);
 
         var userStoreMock = new Mock<IUserStore<IdentityUser>>();
         var userManagerMock = new Mock<UserManager<IdentityUser>>(
-            userStoreMock.Object, null, null, null, null, null, null, null, null);
+            userStoreMock.Object, null!, null!, null!, null!, null!, null!, null!, null!);
 
         userManagerMock.Setup(x => x.FindByEmailAsync("admin@clinic.com")).ReturnsAsync((IdentityUser)null);
         userManagerMock.Setup(x => x.CreateAsync(It.IsAny<IdentityUser>(), It.IsAny<string>())).ReturnsAsync(IdentityResult.Success);
