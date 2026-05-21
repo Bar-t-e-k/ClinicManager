@@ -26,7 +26,7 @@ public class DataSeederTests
         var userManagerMock = new Mock<UserManager<IdentityUser>>(
             userStoreMock.Object, null!, null!, null!, null!, null!, null!, null!, null!);
 
-        userManagerMock.Setup(x => x.FindByEmailAsync("admin@clinic.com")).ReturnsAsync((IdentityUser)null);
+        userManagerMock.Setup(x => x.FindByEmailAsync("admin@clinic.com")).ReturnsAsync((IdentityUser)null!);
         userManagerMock.Setup(x => x.CreateAsync(It.IsAny<IdentityUser>(), It.IsAny<string>())).ReturnsAsync(IdentityResult.Success);
         userManagerMock.Setup(x => x.AddToRoleAsync(It.IsAny<IdentityUser>(), "Admin")).ReturnsAsync(IdentityResult.Success);
 
