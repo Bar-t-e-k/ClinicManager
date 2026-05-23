@@ -1,0 +1,70 @@
+﻿@model IEnumerable<ClinicManager.Web.DTOs.MedicationDto>
+@{
+    ViewData["Title"] = "Katalog leków";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Katalog leków</h2>
+    <a asp-action="Create" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Dodaj lek
+    </a>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        @TempData["Success"] <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="table-responsive">
+    <table class="table table-hover table-bordered align-middle">
+        <thead class="table-dark">
+            <tr>
+                <th>Nazwa</th>
+                <th>Opis</th>
+                <th class="text-end">Cena</th>
+                <th class="text-center">Status</th>
+                <th>Akcje</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var med in Model)
+            {
+                <tr class="@(!med.IsActive ? "table-secondary text-muted" : "")">
+                    <td>@med.Name</td>
+                    <td>@(med.Description ?? "—")</td>
+                    <td class="text-end">@med.Price.ToString("C")</td>
+                    <td class="text-center">
+                        @if (med.IsActive)
+                        {
+                            <span class="badge bg-success">Aktywny</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">Nieaktywny</span>
+                        }
+                    </td>
+                    <td>
+                        <a asp-action="Edit" asp-route-id="@med.Id" class="btn btn-sm btn-outline-primary">Edytuj</a>
+                        @if (med.IsActive)
+                        {
+                            <form asp-action="Deactivate" method="post" class="d-inline"
+                                  onsubmit="return confirm('Dezaktywować ten lek?');">
+                                <input type="hidden" name="id" value="@med.Id" />
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-sm btn-outline-warning">Dezaktywuj</button>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+            @if (!Model.Any())
+            {
+                <tr>
+                    <td colspan="5" class="text-center text-muted">Brak leków w katalogu.</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

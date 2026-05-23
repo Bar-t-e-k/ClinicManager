@@ -1,0 +1,201 @@
+﻿@model ClinicManager.Web.DTOs.VisitDetailsDto
+@{
+    ViewData["Title"] = $"Wizyta #{Model.Id}";
+    var isDoctor = User.IsInRole("Lekarz") || User.IsInRole("Admin");
+    var isRegistrar = User.IsInRole("Rejestratorka") || User.IsInRole("Admin");
+}
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        @TempData["Success"] <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">
+        @TempData["Error"] <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<!-- ═══════════════ NAGŁÓWEK WIZYTY ═══════════════ -->
+<div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+        <h2 class="mb-0">Wizyta #@Model.Id</h2>
+        <small class="text-muted">@Model.ScheduledDate.ToString("dddd, dd MMMM yyyy, HH:mm", new System.Globalization.CultureInfo("pl-PL"))</small>
+    </div>
+    <a asp-action="Index" class="btn btn-outline-secondary btn-sm">← Wróć do listy</a>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">Informacje ogólne</h5>
+                <dl class="row mb-0">
+                    <dt class="col-5">Pacjent</dt>
+                    <dd class="col-7">@Model.PatientFullName</dd>
+                    <dt class="col-5">Lekarz</dt>
+                    <dd class="col-7">@Model.DoctorName</dd>
+                    <dt class="col-5">Opis / cel</dt>
+                    <dd class="col-7">@(Model.Description ?? "—")</dd>
+                    <dt class="col-5">Koszt całkowity</dt>
+                    <dd class="col-7 fw-bold">@Model.TotalCost.ToString("C")</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">Status wizyty</h5>
+                @{
+                    var badgeClass = Model.Status switch
+                    {
+                        "Zaplanowana"  => "bg-secondary",
+                        "Potwierdzona" => "bg-info text-dark",
+                        "W trakcie"    => "bg-warning text-dark",
+                        "Zakończona"   => "bg-success",
+                        "Anulowana"    => "bg-danger",
+                        _              => "bg-secondary"
+                    };
+                }
+                <p><span class="badge @badgeClass fs-6">@Model.Status</span></p>
+
+                @if (isRegistrar)
+                {
+                    <form asp-action="UpdateStatus" method="post" class="d-flex gap-2 align-items-end">
+                        <input type="hidden" name="id" value="@Model.Id" />
+                        @Html.AntiForgeryToken()
+                        <div class="flex-grow-1">
+                            <label class="form-label small mb-1">Zmień status</label>
+                            <select name="status" asp-items="@ViewBag.StatusSelectList" class="form-select form-select-sm"></select>
+                        </div>
+                        <button type="submit" class="btn btn-sm btn-primary">Zapisz</button>
+                    </form>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════ NOTATKI KLINICZNE ═══════════════ -->
+@if (isDoctor)
+{
+    <div class="card mb-4">
+        <div class="card-header bg-light fw-semibold">📋 Notatki kliniczne</div>
+        <div class="card-body">
+
+            @if (!Model.ClinicalNotes.Any())
+            {
+                <p class="text-muted mb-3">Brak notatek.</p>
+            }
+            else
+            {
+                <div class="list-group mb-3">
+                    @foreach (var note in Model.ClinicalNotes)
+                    {
+                        <div class="list-group-item list-group-item-action">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="me-3">
+                                    <small class="text-muted">@note.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</small>
+                                    <p class="mb-0 mt-1">@note.Content</p>
+                                </div>
+                                <form asp-action="DeleteNote" method="post"
+                                      onsubmit="return confirm('Usunąć tę notatkę?');">
+                                    <input type="hidden" name="noteId" value="@note.Id" />
+                                    <input type="hidden" name="visitId" value="@Model.Id" />
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">Usuń</button>
+                                </form>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+
+            <form asp-action="AddNote" method="post">
+                <input type="hidden" name="visitId" value="@Model.Id" />
+                @Html.AntiForgeryToken()
+                <div class="mb-2">
+                    <label class="form-label fw-semibold">Dodaj notatkę</label>
+                    <textarea name="Content" class="form-control" rows="3"
+                              placeholder="Wpisz notatkę kliniczną…" required minlength="3" maxlength="2000"></textarea>
+                </div>
+                <button type="submit" class="btn btn-success btn-sm">Dodaj notatkę</button>
+            </form>
+
+        </div>
+    </div>
+
+    <!-- ═══════════════ LEKI ═══════════════ -->
+    <div class="card mb-4">
+        <div class="card-header bg-light fw-semibold">💊 Przepisane leki</div>
+        <div class="card-body">
+
+            @if (!Model.Medications.Any())
+            {
+                <p class="text-muted mb-3">Nie przepisano żadnych leków.</p>
+            }
+            else
+            {
+                <table class="table table-sm table-bordered mb-3">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Lek</th>
+                            <th class="text-end">Ilość</th>
+                            <th class="text-end">Cena jedn.</th>
+                            <th class="text-end">Razem</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var med in Model.Medications)
+                        {
+                            <tr>
+                                <td>@med.MedicationName</td>
+                                <td class="text-end">@med.Quantity</td>
+                                <td class="text-end">@med.UnitPrice.ToString("C")</td>
+                                <td class="text-end fw-semibold">@med.TotalPrice.ToString("C")</td>
+                                <td class="text-center">
+                                    <form asp-action="RemoveMedication" method="post" class="d-inline"
+                                          onsubmit="return confirm('Usunąć ten lek z wizyty?');">
+                                        <input type="hidden" name="visitMedicationId" value="@med.Id" />
+                                        <input type="hidden" name="visitId" value="@Model.Id" />
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">Usuń</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                        <tr class="table-secondary">
+                            <td colspan="3" class="text-end fw-bold">Łączny koszt:</td>
+                            <td class="text-end fw-bold">@Model.TotalCost.ToString("C")</td>
+                            <td></td>
+                        </tr>
+                    </tbody>
+                </table>
+            }
+
+            <form asp-action="AddMedication" method="post" class="row g-2 align-items-end">
+                <input type="hidden" name="visitId" value="@Model.Id" />
+                @Html.AntiForgeryToken()
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Lek</label>
+                    <select name="MedicationId" asp-items="@ViewBag.MedicationSelectList" class="form-select" required>
+                        <option value="">— wybierz lek —</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Ilość</label>
+                    <input type="number" name="Quantity" value="1" min="1" max="100" class="form-control" />
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-success w-100">Przepisz lek</button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+}

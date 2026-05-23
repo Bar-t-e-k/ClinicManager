@@ -1,7 +1,5 @@
-using System.Reflection.Metadata;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
-using NLog;
 
 namespace ClinicManager.Web.Data;
 
@@ -20,17 +18,13 @@ public static class DataSeeder
 
             foreach (var roleName in roleNames)
             {
-                var roleExist = await roleManager.RoleExistsAsync(roleName);
-                if (!roleExist)
-                {
+                if (!await roleManager.RoleExistsAsync(roleName))
                     await roleManager.CreateAsync(new IdentityRole(roleName));
-                }
             }
 
+            // Admin
             var adminEmail = "admin@clinic.com";
-            var adminUser = await userManager.FindByEmailAsync(adminEmail);
-
-            if (adminUser == null)
+            if (await userManager.FindByEmailAsync(adminEmail) == null)
             {
                 var newAdmin = new IdentityUser
                 {
@@ -40,14 +34,27 @@ public static class DataSeeder
                 };
 
                 string password = configuration["SeedData:AdminPassword"] ??
-                                  throw new InvalidOperationException(
-                                      "Hasło administratora nie zostało skonfigurowane w User Secrets!");
-                var createPowerUser = await userManager.CreateAsync(newAdmin, password);
+                                  throw new InvalidOperationException("Hasło administratora nie zostało skonfigurowane w User Secrets!");
 
-                if (createPowerUser.Succeeded)
-                {
+                var result = await userManager.CreateAsync(newAdmin, password);
+                if (result.Succeeded)
                     await userManager.AddToRoleAsync(newAdmin, "Admin");
-                }
+            }
+
+            // Lekarz testowy
+            var doctorEmail = "lekarz@clinic.com";
+            if (await userManager.FindByEmailAsync(doctorEmail) == null)
+            {
+                var newDoctor = new IdentityUser
+                {
+                    UserName = doctorEmail,
+                    Email = doctorEmail,
+                    EmailConfirmed = true
+                };
+
+                var result = await userManager.CreateAsync(newDoctor, "Lekarz123!");
+                if (result.Succeeded)
+                    await userManager.AddToRoleAsync(newDoctor, "Lekarz");
             }
 
             logger.LogInformation("Pomyślnie wykonano seedowanie bazy danych.");
