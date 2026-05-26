@@ -28,7 +28,6 @@ public class VisitService : IVisitService
             query = query.Where(v => v.DoctorId == doctorId);
 
         var visits = await query.OrderBy(v => v.ScheduledDate).ToListAsync();
-
         return visits.Select(v => MapToDto(v));
     }
 
@@ -103,6 +102,8 @@ public class VisitService : IVisitService
 
     public async Task<bool> UpdateVisitStatusAsync(int id, VisitStatus status)
     {
+        if (!Enum.IsDefined(typeof(VisitStatus), status)) return false;
+
         var visit = await _context.Visits.FindAsync(id);
         if (visit == null || visit.IsDeleted) return false;
 
@@ -136,9 +137,11 @@ public class VisitService : IVisitService
         return true;
     }
 
-    public async Task<bool> DeleteClinicalNoteAsync(int noteId)
+    public async Task<bool> DeleteClinicalNoteAsync(int noteId, int visitId)
     {
-        var note = await _context.ClinicalNotes.FindAsync(noteId);
+        var note = await _context.ClinicalNotes
+            .FirstOrDefaultAsync(n => n.Id == noteId && n.VisitId == visitId);
+
         if (note == null) return false;
 
         _context.ClinicalNotes.Remove(note);
@@ -158,7 +161,6 @@ public class VisitService : IVisitService
         if (medication == null || !medication.IsActive)
             return (false, "Lek nie istnieje lub jest nieaktywny.");
 
-        // Jeśli ten lek już jest na wizycie — zwiększ ilość
         var existing = visit.VisitMedications.FirstOrDefault(vm => vm.MedicationId == dto.MedicationId);
         if (existing != null)
         {
@@ -171,7 +173,7 @@ public class VisitService : IVisitService
                 VisitId = visitId,
                 MedicationId = dto.MedicationId,
                 Quantity = dto.Quantity,
-                UnitPrice = medication.Price   // snapshot ceny
+                UnitPrice = medication.Price
             });
         }
 
@@ -196,8 +198,6 @@ public class VisitService : IVisitService
         await _context.SaveChangesAsync();
         return true;
     }
-
-    // ── Helpers ────────────────────────────────────────────────────────────
 
     private static void RecalculateTotalCost(Visit visit)
     {

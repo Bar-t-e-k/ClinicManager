@@ -41,7 +41,6 @@ public class PatientServiceTests
 
         // Assert
         var patientInDb = await context.Set<Patient>().FindAsync(resultId);
-
         Assert.NotNull(patientInDb);
         Assert.Equal("Jan", patientInDb.FirstName);
         Assert.False(patientInDb.IsDeleted);
@@ -63,7 +62,6 @@ public class PatientServiceTests
 
         // Assert
         Assert.True(result);
-
         var patientInDb = await context.Set<Patient>().FindAsync(patient.Id);
         Assert.NotNull(patientInDb);
         Assert.True(patientInDb.IsDeleted);
@@ -117,22 +115,31 @@ public class VisitServiceTests
         return userManager.Object;
     }
 
+    private static async Task<(Patient patient, IdentityUser doctor)> SeedVisitPrerequisitesAsync(ClinicDbContext context)
+    {
+        var patient = new Patient { FirstName = "Jan", LastName = "Kowalski", Pesel = "12345678901" };
+        context.Patients.Add(patient);
+
+        var doctor = new IdentityUser { Id = "doc1", UserName = "lekarz@clinic.com", Email = "lekarz@clinic.com" };
+        context.Users.Add(doctor);
+
+        await context.SaveChangesAsync();
+        return (patient, doctor);
+    }
+
     [Fact]
     public async Task CreateVisitAsync_ShouldFail_WhenDateIsInThePast()
     {
         // Arrange
         var context = await GetInMemoryDbContextAsync();
-        var userManager = GetMockUserManager(new IdentityUser { Id = "doc1", Email = "lekarz@clinic.com" });
+        var (patient, doctor) = await SeedVisitPrerequisitesAsync(context);
+        var userManager = GetMockUserManager(doctor);
         var service = new VisitService(context, userManager);
-
-        var patient = new Patient { FirstName = "Jan", LastName = "Kowalski", Pesel = "12345678901" };
-        context.Patients.Add(patient);
-        await context.SaveChangesAsync();
 
         var dto = new CreateVisitDto
         {
             PatientId = patient.Id,
-            DoctorId = "doc1",
+            DoctorId = doctor.Id,
             ScheduledDate = DateTime.Today.AddDays(-1)
         };
 
@@ -149,17 +156,14 @@ public class VisitServiceTests
     {
         // Arrange
         var context = await GetInMemoryDbContextAsync();
-        var userManager = GetMockUserManager(new IdentityUser { Id = "doc1", Email = "lekarz@clinic.com" });
+        var (patient, doctor) = await SeedVisitPrerequisitesAsync(context);
+        var userManager = GetMockUserManager(doctor);
         var service = new VisitService(context, userManager);
-
-        var patient = new Patient { FirstName = "Jan", LastName = "Kowalski", Pesel = "12345678901" };
-        context.Patients.Add(patient);
-        await context.SaveChangesAsync();
 
         var dto = new CreateVisitDto
         {
             PatientId = patient.Id,
-            DoctorId = "doc1",
+            DoctorId = doctor.Id,
             ScheduledDate = DateTime.Today.AddDays(1)
         };
 
@@ -177,13 +181,14 @@ public class VisitServiceTests
     {
         // Arrange
         var context = await GetInMemoryDbContextAsync();
-        var userManager = GetMockUserManager();
+        var (patient, doctor) = await SeedVisitPrerequisitesAsync(context);
+        var userManager = GetMockUserManager(doctor);
         var service = new VisitService(context, userManager);
 
         var visit = new Visit
         {
-            PatientId = 1,
-            DoctorId = "doc1",
+            PatientId = patient.Id,
+            DoctorId = doctor.Id,
             ScheduledDate = DateTime.Today.AddDays(1),
             Status = VisitStatus.Zaplanowana
         };
@@ -204,13 +209,14 @@ public class VisitServiceTests
     {
         // Arrange
         var context = await GetInMemoryDbContextAsync();
-        var userManager = GetMockUserManager();
+        var (patient, doctor) = await SeedVisitPrerequisitesAsync(context);
+        var userManager = GetMockUserManager(doctor);
         var service = new VisitService(context, userManager);
 
         var visit = new Visit
         {
-            PatientId = 1,
-            DoctorId = "doc1",
+            PatientId = patient.Id,
+            DoctorId = doctor.Id,
             ScheduledDate = DateTime.Today.AddDays(1),
             Status = VisitStatus.Zaplanowana
         };
@@ -228,17 +234,44 @@ public class VisitServiceTests
     }
 
     [Fact]
+    public async Task DeleteClinicalNoteAsync_ShouldFail_WhenNoteDoesNotBelongToVisit()
+    {
+        // Arrange
+        var context = await GetInMemoryDbContextAsync();
+        var (patient, doctor) = await SeedVisitPrerequisitesAsync(context);
+        var userManager = GetMockUserManager(doctor);
+        var service = new VisitService(context, userManager);
+
+        var visit1 = new Visit { PatientId = patient.Id, DoctorId = doctor.Id, ScheduledDate = DateTime.Today.AddDays(1) };
+        var visit2 = new Visit { PatientId = patient.Id, DoctorId = doctor.Id, ScheduledDate = DateTime.Today.AddDays(2) };
+        context.Visits.AddRange(visit1, visit2);
+        await context.SaveChangesAsync();
+
+        var note = new ClinicalNote { VisitId = visit1.Id, Content = "Notatka do wizyty 1." };
+        context.ClinicalNotes.Add(note);
+        await context.SaveChangesAsync();
+
+        // Act — próba usunięcia notatki z wizyty 1 podając ID wizyty 2
+        var result = await service.DeleteClinicalNoteAsync(note.Id, visit2.Id);
+
+        // Assert
+        Assert.False(result);
+        Assert.Equal(1, await context.ClinicalNotes.CountAsync());
+    }
+
+    [Fact]
     public async Task AddMedicationAsync_ShouldIncreaseTotalCost()
     {
         // Arrange
         var context = await GetInMemoryDbContextAsync();
-        var userManager = GetMockUserManager();
+        var (patient, doctor) = await SeedVisitPrerequisitesAsync(context);
+        var userManager = GetMockUserManager(doctor);
         var service = new VisitService(context, userManager);
 
         var visit = new Visit
         {
-            PatientId = 1,
-            DoctorId = "doc1",
+            PatientId = patient.Id,
+            DoctorId = doctor.Id,
             ScheduledDate = DateTime.Today.AddDays(1),
             Status = VisitStatus.Zaplanowana
         };
@@ -264,13 +297,14 @@ public class VisitServiceTests
     {
         // Arrange
         var context = await GetInMemoryDbContextAsync();
-        var userManager = GetMockUserManager();
+        var (patient, doctor) = await SeedVisitPrerequisitesAsync(context);
+        var userManager = GetMockUserManager(doctor);
         var service = new VisitService(context, userManager);
 
         var visit = new Visit
         {
-            PatientId = 1,
-            DoctorId = "doc1",
+            PatientId = patient.Id,
+            DoctorId = doctor.Id,
             ScheduledDate = DateTime.Today.AddDays(1),
             Status = VisitStatus.Zaplanowana
         };
@@ -284,5 +318,31 @@ public class VisitServiceTests
         Assert.True(result);
         var visitInDb = await context.Visits.FindAsync(visit.Id);
         Assert.Equal(VisitStatus.Potwierdzona, visitInDb!.Status);
+    }
+
+    [Fact]
+    public async Task UpdateVisitStatusAsync_ShouldFail_WhenStatusIsInvalid()
+    {
+        // Arrange
+        var context = await GetInMemoryDbContextAsync();
+        var (patient, doctor) = await SeedVisitPrerequisitesAsync(context);
+        var userManager = GetMockUserManager(doctor);
+        var service = new VisitService(context, userManager);
+
+        var visit = new Visit
+        {
+            PatientId = patient.Id,
+            DoctorId = doctor.Id,
+            ScheduledDate = DateTime.Today.AddDays(1),
+            Status = VisitStatus.Zaplanowana
+        };
+        context.Visits.Add(visit);
+        await context.SaveChangesAsync();
+
+        // Act
+        var result = await service.UpdateVisitStatusAsync(visit.Id, (VisitStatus)999);
+
+        // Assert
+        Assert.False(result);
     }
 }

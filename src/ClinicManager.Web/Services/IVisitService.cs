@@ -10,12 +10,8 @@ public interface IVisitService
     Task<(bool Success, string? Error)> CreateVisitAsync(CreateVisitDto dto);
     Task<bool> UpdateVisitStatusAsync(int id, VisitStatus status);
     Task<bool> DeleteVisitAsync(int id);
-
-    // Notatki kliniczne
     Task<bool> AddClinicalNoteAsync(int visitId, CreateClinicalNoteDto dto);
-    Task<bool> DeleteClinicalNoteAsync(int noteId);
-
-    // Leki
+    Task<bool> DeleteClinicalNoteAsync(int noteId, int visitId);
     Task<(bool Success, string? Error)> AddMedicationAsync(int visitId, AddMedicationToVisitDto dto);
     Task<bool> RemoveMedicationAsync(int visitMedicationId);
 }

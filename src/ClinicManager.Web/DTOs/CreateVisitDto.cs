@@ -4,7 +4,7 @@ namespace ClinicManager.Web.DTOs;
 
 public class CreateVisitDto
 {
-    [Required(ErrorMessage = "Pacjent jest wymagany.")]
+    [Range(1, int.MaxValue, ErrorMessage = "Pacjent jest wymagany.")]
     [Display(Name = "Pacjent")]
     public int PatientId { get; set; }
 

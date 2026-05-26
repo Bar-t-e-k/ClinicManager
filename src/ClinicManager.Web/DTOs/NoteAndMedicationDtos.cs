@@ -12,7 +12,7 @@ public class CreateClinicalNoteDto
 
 public class AddMedicationToVisitDto
 {
-    [Required(ErrorMessage = "Wybierz lek.")]
+    [Range(1, int.MaxValue, ErrorMessage = "Wybierz lek.")]
     public int MedicationId { get; set; }
 
     [Range(1, 100, ErrorMessage = "Ilość musi być między 1 a 100.")]

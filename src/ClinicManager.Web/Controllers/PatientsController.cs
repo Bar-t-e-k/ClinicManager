@@ -36,6 +36,7 @@ public class PatientsController : Controller
         return RedirectToAction(nameof(Index));
     }
 
+    [Authorize(Roles = "Admin,Rejestratorka")]
     public async Task<IActionResult> Edit(int id)
     {
         var patient = await _patientService.GetPatientByIdAsync(id);
@@ -52,6 +53,7 @@ public class PatientsController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [Authorize(Roles = "Admin,Rejestratorka")]
     public async Task<IActionResult> Edit(int id, CreateUpdatePatientDto dto)
     {
         if (!ModelState.IsValid) return View(dto);

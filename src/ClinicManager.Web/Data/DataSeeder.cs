@@ -1,11 +1,10 @@
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.Logging;
 
 namespace ClinicManager.Web.Data;
 
 public static class DataSeeder
 {
-    public static async Task SeedRolesAndAdminAsync(IServiceProvider serviceProvider, IConfiguration configuration)
+    public static async Task SeedRolesAndAdminAsync(IServiceProvider serviceProvider, IConfiguration configuration, bool isDevelopment = true)
     {
         var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
 
@@ -41,20 +40,26 @@ public static class DataSeeder
                     await userManager.AddToRoleAsync(newAdmin, "Admin");
             }
 
-            // Lekarz testowy
-            var doctorEmail = "lekarz@clinic.com";
-            if (await userManager.FindByEmailAsync(doctorEmail) == null)
+            // Lekarz testowy — tylko w Development
+            if (isDevelopment)
             {
-                var newDoctor = new IdentityUser
+                var doctorEmail = "lekarz@clinic.com";
+                if (await userManager.FindByEmailAsync(doctorEmail) == null)
                 {
-                    UserName = doctorEmail,
-                    Email = doctorEmail,
-                    EmailConfirmed = true
-                };
+                    var newDoctor = new IdentityUser
+                    {
+                        UserName = doctorEmail,
+                        Email = doctorEmail,
+                        EmailConfirmed = true
+                    };
 
-                var result = await userManager.CreateAsync(newDoctor, "Lekarz123!");
-                if (result.Succeeded)
-                    await userManager.AddToRoleAsync(newDoctor, "Lekarz");
+                    string doctorPassword = configuration["SeedData:DoctorPassword"] ??
+                                           throw new InvalidOperationException("Hasło lekarza nie zostało skonfigurowane w User Secrets!");
+
+                    var result = await userManager.CreateAsync(newDoctor, doctorPassword);
+                    if (result.Succeeded)
+                        await userManager.AddToRoleAsync(newDoctor, "Lekarz");
+                }
             }
 
             logger.LogInformation("Pomyślnie wykonano seedowanie bazy danych.");

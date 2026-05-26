@@ -46,6 +46,14 @@ public class VisitsController : Controller
         var visit = await _visitService.GetVisitDetailsAsync(id);
         if (visit == null) return NotFound();
 
+        // Lekarz może zobaczyć tylko swoją wizytę
+        if (User.IsInRole("Lekarz") && !User.IsInRole("Admin"))
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (visit.DoctorId != user?.Id)
+                return Forbid();
+        }
+
         var medications = await _medicationService.GetAllMedicationsAsync();
         ViewBag.MedicationSelectList = medications
             .Where(m => m.IsActive)
@@ -94,8 +102,18 @@ public class VisitsController : Controller
     [Authorize(Roles = "Admin,Rejestratorka")]
     public async Task<IActionResult> UpdateStatus(int id, VisitStatus status)
     {
-        await _visitService.UpdateVisitStatusAsync(id, status);
-        TempData["Success"] = "Status wizyty został zaktualizowany.";
+        if (!Enum.IsDefined(typeof(VisitStatus), status))
+        {
+            TempData["Error"] = "Nieprawidłowy status wizyty.";
+            return RedirectToAction(nameof(Details), new { id });
+        }
+
+        var updated = await _visitService.UpdateVisitStatusAsync(id, status);
+        if (!updated)
+            TempData["Error"] = "Nie udało się zaktualizować statusu wizyty.";
+        else
+            TempData["Success"] = "Status wizyty został zaktualizowany.";
+
         return RedirectToAction(nameof(Details), new { id });
     }
 
@@ -119,7 +137,10 @@ public class VisitsController : Controller
     [Authorize(Roles = "Admin,Lekarz")]
     public async Task<IActionResult> DeleteNote(int noteId, int visitId)
     {
-        await _visitService.DeleteClinicalNoteAsync(noteId);
+        var result = await _visitService.DeleteClinicalNoteAsync(noteId, visitId);
+        if (!result)
+            TempData["Error"] = "Nie udało się usunąć notatki.";
+
         return RedirectToAction(nameof(Details), new { id = visitId });
     }
 
@@ -128,6 +149,12 @@ public class VisitsController : Controller
     [Authorize(Roles = "Admin,Lekarz")]
     public async Task<IActionResult> AddMedication(int visitId, AddMedicationToVisitDto dto)
     {
+        if (!ModelState.IsValid)
+        {
+            TempData["Error"] = "Nieprawidłowe dane leku.";
+            return RedirectToAction(nameof(Details), new { id = visitId });
+        }
+
         var (success, error) = await _visitService.AddMedicationAsync(visitId, dto);
         if (!success)
             TempData["Error"] = error;
