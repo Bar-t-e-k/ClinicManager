@@ -1,13 +1,10 @@
-using System.Reflection.Metadata;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.Logging;
-using NLog;
 
 namespace ClinicManager.Web.Data;
 
 public static class DataSeeder
 {
-    public static async Task SeedRolesAndAdminAsync(IServiceProvider serviceProvider, IConfiguration configuration)
+    public static async Task SeedRolesAndAdminAsync(IServiceProvider serviceProvider, IConfiguration configuration, bool isDevelopment = true)
     {
         var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
 
@@ -20,17 +17,13 @@ public static class DataSeeder
 
             foreach (var roleName in roleNames)
             {
-                var roleExist = await roleManager.RoleExistsAsync(roleName);
-                if (!roleExist)
-                {
+                if (!await roleManager.RoleExistsAsync(roleName))
                     await roleManager.CreateAsync(new IdentityRole(roleName));
-                }
             }
 
+            // Admin
             var adminEmail = "admin@clinic.com";
-            var adminUser = await userManager.FindByEmailAsync(adminEmail);
-
-            if (adminUser == null)
+            if (await userManager.FindByEmailAsync(adminEmail) == null)
             {
                 var newAdmin = new IdentityUser
                 {
@@ -40,13 +33,32 @@ public static class DataSeeder
                 };
 
                 string password = configuration["SeedData:AdminPassword"] ??
-                                  throw new InvalidOperationException(
-                                      "Hasło administratora nie zostało skonfigurowane w User Secrets!");
-                var createPowerUser = await userManager.CreateAsync(newAdmin, password);
+                                  throw new InvalidOperationException("Hasło administratora nie zostało skonfigurowane w User Secrets!");
 
-                if (createPowerUser.Succeeded)
-                {
+                var result = await userManager.CreateAsync(newAdmin, password);
+                if (result.Succeeded)
                     await userManager.AddToRoleAsync(newAdmin, "Admin");
+            }
+
+            // Lekarz testowy — tylko w Development
+            if (isDevelopment)
+            {
+                var doctorEmail = "lekarz@clinic.com";
+                if (await userManager.FindByEmailAsync(doctorEmail) == null)
+                {
+                    var newDoctor = new IdentityUser
+                    {
+                        UserName = doctorEmail,
+                        Email = doctorEmail,
+                        EmailConfirmed = true
+                    };
+
+                    string doctorPassword = configuration["SeedData:DoctorPassword"] ??
+                                           throw new InvalidOperationException("Hasło lekarza nie zostało skonfigurowane w User Secrets!");
+
+                    var result = await userManager.CreateAsync(newDoctor, doctorPassword);
+                    if (result.Succeeded)
+                        await userManager.AddToRoleAsync(newDoctor, "Lekarz");
                 }
             }
 

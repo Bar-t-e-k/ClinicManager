@@ -1,0 +1,35 @@
+﻿@model ClinicManager.Web.DTOs.CreateUpdatePatientDto
+@{ ViewData["Title"] = "Dodaj pacjenta"; }
+
+<h2 class="mb-4">Dodaj pacjenta</h2>
+
+<div class="row"><div class="col-md-5">
+	<form asp-action="Create" method="post">
+		<div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+		<div class="mb-3">
+			<label asp-for="FirstName" class="form-label fw-semibold">Imię</label>
+			<input asp-for="FirstName" class="form-control" />
+			<span asp-validation-for="FirstName" class="text-danger small"></span>
+		</div>
+		<div class="mb-3">
+			<label asp-for="LastName" class="form-label fw-semibold">Nazwisko</label>
+			<input asp-for="LastName" class="form-control" />
+			<span asp-validation-for="LastName" class="text-danger small"></span>
+		</div>
+		<div class="mb-3">
+			<label asp-for="Pesel" class="form-label fw-semibold">PESEL</label>
+			<input asp-for="Pesel" class="form-control" />
+			<span asp-validation-for="Pesel" class="text-danger small"></span>
+		</div>
+		<div class="mb-3">
+			<label asp-for="InsuranceNumber" class="form-label fw-semibold">Nr ubezpieczenia</label>
+			<input asp-for="InsuranceNumber" class="form-control" />
+		</div>
+		<div class="d-flex gap-2">
+			<button type="submit" class="btn btn-primary">Zapisz</button>
+			<a asp-action="Index" class="btn btn-outline-secondary">Anuluj</a>
+		</div>
+	</form>
+</div></div>
+
+@section Scripts { @{await Html.RenderPartialAsync("_ValidationScriptsPartial");} }

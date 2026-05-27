@@ -1,5 +1,6 @@
 using ClinicManager.Web.Data;
 using ClinicManager.Web.Filters;
+using ClinicManager.Web.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using NLog;
@@ -22,19 +23,23 @@ try
 
     // 2. Rejestracja systemu Identity
     builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
-        {
-            // Opcjonalne ułatwienie na czas dewelopmentu
-            options.SignIn.RequireConfirmedAccount = false;
-            options.Password.RequireDigit = false;
-            options.Password.RequiredLength = 4;
-            options.Password.RequireNonAlphanumeric = false;
-            options.Password.RequireUppercase = false;
-        })
+    {
+        options.SignIn.RequireConfirmedAccount = false;
+        options.Password.RequireDigit = false;
+        options.Password.RequiredLength = 4;
+        options.Password.RequireNonAlphanumeric = false;
+        options.Password.RequireUppercase = false;
+    })
         .AddEntityFrameworkStores<ClinicDbContext>()
         .AddDefaultUI()
         .AddDefaultTokenProviders();
 
-    // Rejestracja kontrolerów oraz dodanie globalnego filtra wyjątków
+    // 3. Rejestracja serwisów aplikacji
+    builder.Services.AddScoped<IPatientService, PatientService>();
+    builder.Services.AddScoped<IVisitService, VisitService>();
+    builder.Services.AddScoped<IMedicationService, MedicationService>();
+
+    // 4. Rejestracja kontrolerów oraz dodanie globalnego filtra wyjątków
     builder.Services.AddControllersWithViews(options =>
     {
         options.Filters.Add<GlobalExceptionFilter>();
@@ -44,7 +49,6 @@ try
 
     var app = builder.Build();
 
-    // Configure the HTTP request pipeline.
     if (!app.Environment.IsDevelopment())
     {
         app.UseExceptionHandler("/Home/Error");
@@ -72,7 +76,6 @@ try
         try
         {
             var context = services.GetRequiredService<ClinicDbContext>();
-
             await context.Database.MigrateAsync();
 
             var config = services.GetRequiredService<IConfiguration>();
@@ -87,7 +90,7 @@ try
 
     app.Run();
 }
-catch (Exception ex)
+catch (Exception ex) when (ex is not HostAbortedException)
 {
     logger.Error(ex, "Aplikacja zakończyła działanie z powodu nieobsłużonego wyjątku.");
     throw;
