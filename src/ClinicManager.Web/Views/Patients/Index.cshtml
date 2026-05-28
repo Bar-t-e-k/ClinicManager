@@ -48,16 +48,18 @@
                     <td>@patient.Pesel</td>
                     <td>@(patient.InsuranceNumber ?? "—")</td>
                     <td>
-                        <a asp-action="Edit" asp-route-id="@patient.Id" class="btn btn-sm btn-outline-primary">Edytuj</a>
-                        @if (User.IsInRole("Admin"))
-                        {
-                            <form asp-action="Delete" method="post" class="d-inline"
-                                  onsubmit="return confirm('Usunąć pacjenta?');">
-                                <input type="hidden" name="id" value="@patient.Id" />
-                                @Html.AntiForgeryToken()
-                                <button type="submit" class="btn btn-sm btn-outline-danger">Usuń</button>
-                            </form>
-                        }
+                        <a asp-action="Details" asp-route-id="@patient.Id" class="btn btn-sm btn-outline-primary">Dokumenty</a>
+                        
+	                    <a asp-action="Edit" asp-route-id="@patient.Id" class="btn btn-sm btn-outline-primary">Edytuj</a>
+	                    @if (User.IsInRole("Admin"))
+	                    {
+		                    <form asp-action="Delete" method="post" class="d-inline"
+		                          onsubmit="return confirm('Usunąć pacjenta?');">
+			                    <input type="hidden" name="id" value="@patient.Id" />
+			                    @Html.AntiForgeryToken()
+			                    <button type="submit" class="btn btn-sm btn-outline-danger">Usuń</button>
+		                    </form>
+	                    }
                     </td>
                 </tr>
             }

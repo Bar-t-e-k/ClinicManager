@@ -5,6 +5,7 @@ using System.Diagnostics;
 
 namespace ClinicManager.Web.Controllers;
 
+[Authorize]
 public class HomeController : Controller
 {
     public IActionResult Index()
@@ -12,7 +13,6 @@ public class HomeController : Controller
         return View();
     }
 
-    [Authorize(Roles = "Admin")]
     public IActionResult Privacy()
     {
         return View();

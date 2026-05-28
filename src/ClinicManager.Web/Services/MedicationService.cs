@@ -14,11 +14,11 @@ public class MedicationService : IMedicationService
         _context = context;
     }
 
-    public async Task<IEnumerable<MedicationDto>> GetAllMedicationsAsync()
+    public async Task<IEnumerable<CreateUpdateMedicationDto>> GetAllMedicationsAsync()
     {
         return await _context.Medications
             .OrderBy(m => m.Name)
-            .Select(m => new MedicationDto
+            .Select(m => new CreateUpdateMedicationDto
             {
                 Id = m.Id,
                 Name = m.Name,
@@ -29,29 +29,29 @@ public class MedicationService : IMedicationService
             .ToListAsync();
     }
 
-    public async Task<MedicationDto?> GetMedicationByIdAsync(int id)
+    public async Task<CreateUpdateMedicationDto?> GetMedicationByIdAsync(int id)
     {
         var m = await _context.Medications.FindAsync(id);
         if (m == null) return null;
 
-        return new MedicationDto { Id = m.Id, Name = m.Name, Description = m.Description, Price = m.Price, IsActive = m.IsActive };
+        return new CreateUpdateMedicationDto { Id = m.Id, Name = m.Name, Description = m.Description, Price = m.Price, IsActive = m.IsActive };
     }
 
-    public async Task<int> CreateMedicationAsync(CreateMedicationDto dto)
+    public async Task<int> CreateMedicationAsync(CreateUpdateMedicationDto dto)
     {
         var medication = new Medication
         {
             Name = dto.Name,
             Description = dto.Description,
             Price = dto.Price,
-            IsActive = true
+            IsActive = dto.IsActive
         };
         _context.Medications.Add(medication);
         await _context.SaveChangesAsync();
         return medication.Id;
     }
 
-    public async Task<bool> UpdateMedicationAsync(int id, CreateMedicationDto dto)
+    public async Task<bool> UpdateMedicationAsync(int id, CreateUpdateMedicationDto dto)
     {
         var medication = await _context.Medications.FindAsync(id);
         if (medication == null) return false;
@@ -59,6 +59,8 @@ public class MedicationService : IMedicationService
         medication.Name = dto.Name;
         medication.Description = dto.Description;
         medication.Price = dto.Price;
+        medication.IsActive = dto.IsActive;
+
         await _context.SaveChangesAsync();
         return true;
     }

@@ -31,7 +31,7 @@ public class VisitsController : Controller
     public async Task<IActionResult> Index()
     {
         string? doctorFilter = null;
-        if (User.IsInRole("Lekarz") && !User.IsInRole("Admin"))
+        if (!User.IsInRole("Admin") && !User.IsInRole("Rejestratorka"))
         {
             var user = await _userManager.GetUserAsync(User);
             doctorFilter = user?.Id;
@@ -47,7 +47,7 @@ public class VisitsController : Controller
         if (visit == null) return NotFound();
 
         // Lekarz może zobaczyć tylko swoją wizytę
-        if (User.IsInRole("Lekarz") && !User.IsInRole("Admin"))
+        if (!User.IsInRole("Admin") && !User.IsInRole("Rejestratorka"))
         {
             var user = await _userManager.GetUserAsync(User);
             if (visit.DoctorId != user?.Id)
