@@ -21,7 +21,11 @@ public class PatientsControllerTests
         _mockService = new Mock<IPatientService>();
         _mockEnv = new Mock<IWebHostEnvironment>();
 
-        _mockEnv.Setup(m => m.WebRootPath).Returns("C:\\temp");
+        var tempPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+
+        Directory.CreateDirectory(tempPath);
+
+        _mockEnv.Setup(m => m.WebRootPath).Returns(tempPath);
 
         _controller = new PatientsController(_mockService.Object, _mockEnv.Object)
         {
@@ -79,7 +83,7 @@ public class PatientsControllerTests
         int patientId = 1;
         int recordId = 10;
 
-        _mockService.Setup(s => s.DeleteMedicalRecordAsync(recordId))
+        _mockService.Setup(s => s.DeleteMedicalRecordAsync(recordId, patientId))
             .ReturnsAsync("/uploads/fake-file.pdf");
 
         // Act
@@ -89,5 +93,57 @@ public class PatientsControllerTests
         var redirectResult = Assert.IsType<RedirectToActionResult>(result);
         Assert.Equal("Details", redirectResult.ActionName);
         Assert.Equal(patientId, redirectResult.RouteValues["id"]);
+    }
+
+    [Fact]
+    public async Task UploadDocument_RedirectsToDetails_WithTempDataError_WhenExtensionIsInvalid()
+    {
+        // Arrange
+        int patientId = 1;
+
+        var mockFile = new Mock<IFormFile>();
+        mockFile.Setup(f => f.FileName).Returns("zly_program.exe");
+        mockFile.Setup(f => f.Length).Returns(1024);
+
+        // Act
+        var result = await _controller.UploadDocument(patientId, mockFile.Object) as RedirectToActionResult;
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal("Details", result.ActionName);
+        Assert.Equal(patientId, result.RouteValues["id"]);
+
+        Assert.Equal("Niedozwolony format pliku. Wgraj plik PDF, JPG lub PNG.", _controller.TempData["Error"]);
+
+        _mockService.Verify(s => s.AddMedicalRecordAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task UploadDocument_SavesFile_AndCallsService_WhenFileIsValid()
+    {
+        // Arrange
+        int patientId = 1;
+        string validFileName = "wyniki_badan.pdf";
+
+        var mockFile = new Mock<IFormFile>();
+        mockFile.Setup(f => f.FileName).Returns(validFileName);
+        mockFile.Setup(f => f.Length).Returns(1024);
+
+        mockFile.Setup(f => f.CopyToAsync(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        _mockService.Setup(s => s.AddMedicalRecordAsync(patientId, validFileName, It.IsAny<string>()))
+            .ReturnsAsync(true);
+
+        // Act
+        var result = await _controller.UploadDocument(patientId, mockFile.Object) as RedirectToActionResult;
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal("Details", result.ActionName);
+
+        Assert.Equal("Dokument został wgrany.", _controller.TempData["Success"]);
+
+        _mockService.Verify(s => s.AddMedicalRecordAsync(patientId, validFileName, It.IsAny<string>()), Times.Once);
     }
 }

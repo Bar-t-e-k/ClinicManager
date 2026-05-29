@@ -16,15 +16,21 @@
 	</div>
 </div>
 
+@{
+	var imageExtensions = new[] { ".jpg", ".jpeg", ".png" };
+}
+
 <h4 class="mt-5">Dokumentacja Medyczna</h4>
 <div class="row">
 	@if(Model.MedicalRecords != null && Model.MedicalRecords.Any())
 	{
 		foreach (var record in Model.MedicalRecords)
 		{
+			var extension = System.IO.Path.GetExtension(record.FilePath)?.ToLowerInvariant();
+
 			<div class="col-md-3 mb-3">
 				<div class="card h-100">
-					@if (record.FilePath.EndsWith(".jpg") || record.FilePath.EndsWith(".png"))
+					@if (imageExtensions.Contains(extension))
 					{
 						<img src="@record.FilePath" class="card-img-top" alt="Podgląd dokumentu" style="height: 150px; object-fit: cover;">
 					}
@@ -36,12 +42,11 @@
 					}
 					<div class="card-body">
 						<p class="card-text text-truncate" title="@record.FileName">@record.FileName</p>
-						<a href="@record.FilePath" target="_blank" class="btn btn-sm btn-primary w-100">Otwórz</a>
+						<a href="@record.FilePath" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-primary w-100 mb-2">Otwórz</a>
 						
 						<form asp-action="DeleteDocument" method="post" class="w-100" onsubmit="return confirm('Czy na pewno chcesz trwale usunąć ten dokument?');">
 							<input type="hidden" name="recordId" value="@record.Id" />
 							<input type="hidden" name="patientId" value="@Model.Id" />
-							@Html.AntiForgeryToken()
 							<button type="submit" class="btn btn-sm btn-outline-danger w-100">Usuń</button>
 						</form>
 					</div>

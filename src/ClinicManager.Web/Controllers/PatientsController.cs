@@ -123,33 +123,62 @@ public class PatientsController : Controller
 
         var relativePath = $"/uploads/{uniqueFileName}";
 
-        await _patientService.AddMedicalRecordAsync(patientId, document.FileName, relativePath);
+        try
+        {
+            bool isSuccess = await _patientService.AddMedicalRecordAsync(patientId, document.FileName, relativePath);
 
-        TempData["Success"] = "Dokument został wgrany.";
+            if (isSuccess)
+            {
+                TempData["Success"] = "Dokument został wgrany.";
+            }
+            else
+            {
+                if (System.IO.File.Exists(absoluteFilePath))
+                {
+                    System.IO.File.Delete(absoluteFilePath);
+                }
+                TempData["Error"] = "Nie znaleziono pacjenta. Plik nie został przypisany.";
+            }
+        }
+        catch (Exception)
+        {
+            if (System.IO.File.Exists(absoluteFilePath))
+            {
+                System.IO.File.Delete(absoluteFilePath);
+            }
+
+            TempData["Error"] = "Wystąpił błąd po stronie serwera. Plik nie został wgrany.";
+        }
+
         return RedirectToAction(nameof(Details), new { id = patientId });
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    [Authorize(Roles = "Admin,Lekarz,Rejestratorka")] 
+    [Authorize(Roles = "Admin,Lekarz,Rejestratorka")]
     public async Task<IActionResult> DeleteDocument(int recordId, int patientId)
     {
-        var filePath = await _patientService.DeleteMedicalRecordAsync(recordId);
+        var filePath = await _patientService.DeleteMedicalRecordAsync(recordId, patientId);
 
         if (filePath != null)
         {
-            var absolutePath = Path.Combine(_webHostEnvironment.WebRootPath, filePath.TrimStart('/', '\\'));
+            var uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "uploads");
 
-            if (System.IO.File.Exists(absolutePath))
+            var absolutePath = Path.GetFullPath(Path.Combine(_webHostEnvironment.WebRootPath, filePath.TrimStart('/', '\\')));
+
+            if (absolutePath.StartsWith(uploadsFolder, StringComparison.OrdinalIgnoreCase))
             {
-                System.IO.File.Delete(absolutePath);
+                if (System.IO.File.Exists(absolutePath))
+                {
+                    System.IO.File.Delete(absolutePath);
+                }
             }
 
             TempData["Success"] = "Dokument został pomyślnie usunięty.";
         }
         else
         {
-            TempData["Error"] = "Nie znaleziono dokumentu do usunięcia.";
+            TempData["Error"] = "Nie znaleziono dokumentu do usunięcia lub brak uprawnień.";
         }
 
         return RedirectToAction(nameof(Details), new { id = patientId });

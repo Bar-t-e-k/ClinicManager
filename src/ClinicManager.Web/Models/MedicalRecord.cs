@@ -6,10 +6,10 @@ namespace ClinicManager.Web.Models
     {
         public int Id { get; set; }
         public int PatientId { get; set; }
-        public Patient Patient { get; set; }
+        public Patient? Patient { get; set; }
 
-        public string FileName { get; set; } 
-        public string FilePath { get; set; }
+        public required string FileName { get; set; } 
+        public required string FilePath { get; set; }
         public DateTime UploadDate { get; set; } = DateTime.UtcNow;
     }
 }

@@ -18,5 +18,5 @@ public interface IPatientService
 
     Task<bool> AddMedicalRecordAsync(int patientId, string fileName, string filePath);
 
-    Task<string?> DeleteMedicalRecordAsync(int recordId);
+    Task<string?> DeleteMedicalRecordAsync(int recordId, int patientId);
 }

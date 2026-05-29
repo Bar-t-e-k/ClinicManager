@@ -106,9 +106,10 @@ public class PatientService : IPatientService
         return true;
     }
 
-    public async Task<string?> DeleteMedicalRecordAsync(int recordId)
+    public async Task<string?> DeleteMedicalRecordAsync(int recordId, int patientId)
     {
-        var record = await _context.Set<MedicalRecord>().FindAsync(recordId);
+        var record = await _context.Set<MedicalRecord>()
+            .FirstOrDefaultAsync(r => r.Id == recordId && r.PatientId == patientId);
 
         if (record == null) return null;
 

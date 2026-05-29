@@ -123,7 +123,7 @@ public class PatientServiceTests
         var service = new PatientService(context);
 
         // Act
-        var returnedPath = await service.DeleteMedicalRecordAsync(record.Id);
+        var returnedPath = await service.DeleteMedicalRecordAsync(record.Id, patient.Id);
 
         // Assert
         Assert.Equal("/uploads/do-usuniecia.jpg", returnedPath); 
