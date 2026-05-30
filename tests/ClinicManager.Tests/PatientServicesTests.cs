@@ -87,6 +87,49 @@ public class PatientServiceTests
         Assert.Single(result);
         Assert.Equal("Aktywny", result.First().FirstName);
     }
+    [Fact]
+    public async Task AddMedicalRecordAsync_ShouldAddRecordToDatabase()
+    {
+        // Arrange
+        var context = await GetInMemoryDbContextAsync();
+        var patient = new Patient { FirstName = "Jan", LastName = "Plikowy", Pesel = "00000000000" };
+        context.Patients.Add(patient);
+        await context.SaveChangesAsync();
+
+        var service = new PatientService(context);
+
+        // Act
+        var result = await service.AddMedicalRecordAsync(patient.Id, "wyniki-krwi.pdf", "/uploads/wyniki-krwi.pdf");
+
+        // Assert
+        Assert.True(result);
+        var recordsInDb = await context.Set<MedicalRecord>().ToListAsync();
+        Assert.Single(recordsInDb);
+        Assert.Equal("wyniki-krwi.pdf", recordsInDb.First().FileName);
+        Assert.Equal(patient.Id, recordsInDb.First().PatientId);
+    }
+
+    [Fact]
+    public async Task DeleteMedicalRecordAsync_ShouldRemoveRecordAndReturnPath()
+    {
+        // Arrange
+        var context = await GetInMemoryDbContextAsync();
+        var patient = new Patient { FirstName = "Anna", LastName = "Usuwana", Pesel = "11111111111" };
+        var record = new MedicalRecord { FileName = "do-usuniecia.jpg", FilePath = "/uploads/do-usuniecia.jpg" };
+        patient.MedicalRecords.Add(record);
+        context.Patients.Add(patient);
+        await context.SaveChangesAsync();
+
+        var service = new PatientService(context);
+
+        // Act
+        var returnedPath = await service.DeleteMedicalRecordAsync(record.Id, patient.Id);
+
+        // Assert
+        Assert.Equal("/uploads/do-usuniecia.jpg", returnedPath); 
+        var recordsInDb = await context.Set<MedicalRecord>().ToListAsync();
+        Assert.Empty(recordsInDb); 
+    }
 }
 
 public class VisitServiceTests

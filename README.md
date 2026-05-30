@@ -53,6 +53,7 @@ Aplikacja nie przechowuje haseł w plikach konfiguracyjnych. Skonfiguruj własne
 dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=localhost,1433;Database=ClinicManagerDb;User Id=sa;Password=ClinicAdmin!2026;TrustServerCertificate=True;MultipleActiveResultSets=true" --project src/ClinicManager.Web
 dotnet user-secrets set "SeedData:AdminPassword" "Admin123!" --project src/ClinicManager.Web
 dotnet user-secrets set "SeedData:DoctorPassword" "Lekarz123!" --project src/ClinicManager.Web
+dotnet user-secrets set "SeedData:RegPassword" "Rej123!" --project src/ClinicManager.Web
 ```
 ## 🔐 Dane do logowania (Seed Data)
 Aplikacja automatycznie konfiguruje system Identity i tworzy domyślnych użytkowników przy pierwszym uruchomieniu w środowisku Development:
@@ -61,6 +62,7 @@ Aplikacja automatycznie konfiguruje system Identity i tworzy domyślnych użytko
 |------|-------|-------|
 | Admin | `admin@clinic.com` | `Admin123!` |
 | Lekarz (testowy) | `lekarz@clinic.com` | `Lekarz123!` |
+| Rejestratorka (testowa) | `rejestracja@clinic.com` | `Rej123!` |
 
 **Dostępne role w systemie:** `Admin`, `Lekarz`, `Rejestratorka`.
 ## ❓ Rozwiązywanie problemów

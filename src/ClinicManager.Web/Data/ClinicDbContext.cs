@@ -7,15 +7,14 @@ namespace ClinicManager.Web.Data;
 
 public class ClinicDbContext : IdentityDbContext<IdentityUser>
 {
-    public ClinicDbContext(DbContextOptions<ClinicDbContext> options) : base(options)
-    {
-    }
+    public ClinicDbContext(DbContextOptions<ClinicDbContext> options) : base(options) {}
 
     public DbSet<Patient> Patients { get; set; }
     public DbSet<Visit> Visits { get; set; }
     public DbSet<ClinicalNote> ClinicalNotes { get; set; }
     public DbSet<Medication> Medications { get; set; }
     public DbSet<VisitMedication> VisitMedications { get; set; }
+    public DbSet<MedicalRecord> MedicalRecords { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -54,6 +53,13 @@ public class ClinicDbContext : IdentityDbContext<IdentityUser>
             .WithMany(m => m.VisitMedications)
             .HasForeignKey(vm => vm.MedicationId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // MedicalRecord -> Patient
+        modelBuilder.Entity<MedicalRecord>()
+            .HasOne(m => m.Patient)
+            .WithMany(p => p.MedicalRecords)
+            .HasForeignKey(m => m.PatientId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         // Decimal precision
         modelBuilder.Entity<Visit>()

@@ -1,4 +1,4 @@
-﻿@model ClinicManager.Web.DTOs.CreateMedicationDto
+﻿@model ClinicManager.Web.DTOs.CreateUpdateMedicationDto
 @{
 	ViewData["Title"] = "Edytuj lek";
 }
@@ -29,6 +29,11 @@
 					<span class="input-group-text">PLN</span>
 				</div>
 				<span asp-validation-for="Price" class="text-danger small"></span>
+			</div>
+			
+			<div class="form-group form-check mb-3">
+				<input class="form-check-input" asp-for="IsActive" />
+				<label class="form-check-label" asp-for="IsActive">Lek aktywny</label>
 			</div>
 
 			<div class="d-flex gap-2">

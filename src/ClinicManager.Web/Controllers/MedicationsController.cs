@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ClinicManager.Web.Controllers;
 
-[Authorize(Roles = "Admin")]
+[Authorize]
 public class MedicationsController : Controller
 {
     private readonly IMedicationService _medicationService;
@@ -16,6 +16,7 @@ public class MedicationsController : Controller
     }
 
     // GET /Medications
+    [Authorize(Roles = "Admin,Lekarz")]
     public async Task<IActionResult> Index()
     {
         var medications = await _medicationService.GetAllMedicationsAsync();
@@ -23,12 +24,14 @@ public class MedicationsController : Controller
     }
 
     // GET /Medications/Create
-    public IActionResult Create() => View(new CreateMedicationDto());
+    [Authorize(Roles = "Admin")]
+    public IActionResult Create() => View(new CreateUpdateMedicationDto());
 
     // POST /Medications/Create
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create(CreateMedicationDto dto)
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> Create(CreateUpdateMedicationDto dto)
     {
         if (!ModelState.IsValid) return View(dto);
 
@@ -38,23 +41,27 @@ public class MedicationsController : Controller
     }
 
     // GET /Medications/Edit/5
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Edit(int id)
     {
         var medication = await _medicationService.GetMedicationByIdAsync(id);
         if (medication == null) return NotFound();
 
-        return View(new CreateMedicationDto
+        return View(new CreateUpdateMedicationDto
         {
+            Id = medication.Id,             
             Name = medication.Name,
             Description = medication.Description,
-            Price = medication.Price
+            Price = medication.Price,
+            IsActive = medication.IsActive
         });
     }
 
     // POST /Medications/Edit/5
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(int id, CreateMedicationDto dto)
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> Edit(int id, CreateUpdateMedicationDto dto)
     {
         if (!ModelState.IsValid) return View(dto);
 
@@ -68,6 +75,7 @@ public class MedicationsController : Controller
     // POST /Medications/Deactivate/5
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Deactivate(int id)
     {
         await _medicationService.DeactivateMedicationAsync(id);

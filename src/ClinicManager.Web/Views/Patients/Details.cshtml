@@ -1,0 +1,61 @@
+﻿@model ClinicManager.Web.DTOs.PatientDetailsDto
+
+<h2>Profil Pacjenta: @Model.FirstName @Model.LastName</h2>
+<p>PESEL: @Model.Pesel</p>
+
+<div class="card mt-4">
+	<div class="card-header">Dodaj nowy dokument</div>
+	<div class="card-body">
+		<form asp-action="UploadDocument" asp-controller="Patients" method="post" enctype="multipart/form-data">
+			<input type="hidden" name="patientId" value="@Model.Id" />
+			<div class="input-group">
+				<input type="file" class="form-control" name="document" required>
+				<button class="btn btn-outline-primary" type="submit">Wgraj</button>
+			</div>
+		</form>
+	</div>
+</div>
+
+@{
+	var imageExtensions = new[] { ".jpg", ".jpeg", ".png" };
+}
+
+<h4 class="mt-5">Dokumentacja Medyczna</h4>
+<div class="row">
+	@if(Model.MedicalRecords != null && Model.MedicalRecords.Any())
+	{
+		foreach (var record in Model.MedicalRecords)
+		{
+			var extension = System.IO.Path.GetExtension(record.FilePath)?.ToLowerInvariant();
+
+			<div class="col-md-3 mb-3">
+				<div class="card h-100">
+					@if (imageExtensions.Contains(extension))
+					{
+						<img src="@record.FilePath" class="card-img-top" alt="Podgląd dokumentu" style="height: 150px; object-fit: cover;">
+					}
+					else
+					{
+						<div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 150px;">
+							<span class="text-muted">📄 Dokument</span>
+						</div>
+					}
+					<div class="card-body">
+						<p class="card-text text-truncate" title="@record.FileName">@record.FileName</p>
+						<a href="@record.FilePath" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-primary w-100 mb-2">Otwórz</a>
+						
+						<form asp-action="DeleteDocument" method="post" class="w-100" onsubmit="return confirm('Czy na pewno chcesz trwale usunąć ten dokument?');">
+							<input type="hidden" name="recordId" value="@record.Id" />
+							<input type="hidden" name="patientId" value="@Model.Id" />
+							<button type="submit" class="btn btn-sm btn-outline-danger w-100">Usuń</button>
+						</form>
+					</div>
+				</div>
+			</div>
+		}
+	}
+	else
+	{
+		<p class="text-muted">Brak wgranych dokumentów.</p>
+	}
+</div>

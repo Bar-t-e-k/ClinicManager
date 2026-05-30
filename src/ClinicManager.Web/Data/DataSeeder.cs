@@ -40,7 +40,7 @@ public static class DataSeeder
                     await userManager.AddToRoleAsync(newAdmin, "Admin");
             }
 
-            // Lekarz testowy — tylko w Development
+            // Lekarz i rejestratorka testowa — tylko w Development
             if (isDevelopment)
             {
                 var doctorEmail = "lekarz@clinic.com";
@@ -59,6 +59,27 @@ public static class DataSeeder
                     var result = await userManager.CreateAsync(newDoctor, doctorPassword);
                     if (result.Succeeded)
                         await userManager.AddToRoleAsync(newDoctor, "Lekarz");
+                }
+            }
+
+            if (isDevelopment)
+            {
+                var regEmail = "rejestracja@clinic.com";
+                if (await userManager.FindByEmailAsync(regEmail) == null)
+                {
+                    var newReg = new IdentityUser
+                    {
+                        UserName = regEmail,
+                        Email = regEmail,
+                        EmailConfirmed = true
+                    };
+
+                    string regPassword = configuration["SeedData:RegPassword"] ??
+                                            throw new InvalidOperationException("Hasło rejestratorki nie zostało skonfigurowane w User Secrets!");
+
+                    var result = await userManager.CreateAsync(newReg, regPassword);
+                    if (result.Succeeded)
+                        await userManager.AddToRoleAsync(newReg, "Rejestratorka");
                 }
             }
 

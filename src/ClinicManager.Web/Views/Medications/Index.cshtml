@@ -1,4 +1,4 @@
-﻿@model IEnumerable<ClinicManager.Web.DTOs.MedicationDto>
+﻿@model IEnumerable<ClinicManager.Web.DTOs.CreateUpdateMedicationDto>
 @{
     ViewData["Title"] = "Katalog leków";
 }
@@ -47,15 +47,6 @@
                     </td>
                     <td>
                         <a asp-action="Edit" asp-route-id="@med.Id" class="btn btn-sm btn-outline-primary">Edytuj</a>
-                        @if (med.IsActive)
-                        {
-                            <form asp-action="Deactivate" method="post" class="d-inline"
-                                  onsubmit="return confirm('Dezaktywować ten lek?');">
-                                <input type="hidden" name="id" value="@med.Id" />
-                                @Html.AntiForgeryToken()
-                                <button type="submit" class="btn btn-sm btn-outline-warning">Dezaktywuj</button>
-                            </form>
-                        }
                     </td>
                 </tr>
             }
