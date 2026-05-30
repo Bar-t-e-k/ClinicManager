@@ -1,0 +1,53 @@
+﻿@model ClinicManager.Web.DTOs.CreateVisitDto
+@{
+    ViewData["Title"] = "Rejestracja wizyty";
+}
+
+<h2 class="mb-4">Rejestracja nowej wizyty</h2>
+
+<div class="row">
+    <div class="col-md-7">
+        <form asp-action="Create" method="post">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+            <div class="mb-3">
+                <label asp-for="PatientId" class="form-label fw-semibold"></label>
+                <select asp-for="PatientId" asp-items="@ViewBag.Patients" class="form-select">
+                    <option value="">— wybierz pacjenta —</option>
+                </select>
+                <span asp-validation-for="PatientId" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="DoctorId" class="form-label fw-semibold"></label>
+                <select asp-for="DoctorId" asp-items="@ViewBag.Doctors" class="form-select">
+                    <option value="">— wybierz lekarza —</option>
+                </select>
+                <span asp-validation-for="DoctorId" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="ScheduledDate" class="form-label fw-semibold"></label>
+                <input asp-for="ScheduledDate" type="datetime-local" class="form-control"
+                       min="@DateTime.Today.ToString("yyyy-MM-ddTHH:mm")" />
+                <span asp-validation-for="ScheduledDate" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Description" class="form-label fw-semibold"></label>
+                <textarea asp-for="Description" class="form-control" rows="3"
+                          placeholder="Cel wizyty, objawy…"></textarea>
+                <span asp-validation-for="Description" class="text-danger small"></span>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">Zarejestruj wizytę</button>
+                <a asp-action="Index" class="btn btn-outline-secondary">Anuluj</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

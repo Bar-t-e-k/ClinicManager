@@ -41,7 +41,7 @@ public class DataSeederTests
         serviceProviderMock.Setup(x => x.GetService(typeof(ILogger<Program>))).Returns(loggerMock.Object);
 
         // Act
-        await DataSeeder.SeedRolesAndAdminAsync(serviceProviderMock.Object, configMock.Object);
+        await DataSeeder.SeedRolesAndAdminAsync(serviceProviderMock.Object, configMock.Object, isDevelopment: false);
 
         // Assert
         roleManagerMock.Verify(x => x.CreateAsync(It.IsAny<IdentityRole>()), Times.Exactly(3));

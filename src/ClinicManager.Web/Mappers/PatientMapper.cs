@@ -12,4 +12,8 @@ public partial class PatientMapper
     public partial void UpdatePatientFromDto(CreateUpdatePatientDto dto, Patient patient);
 
     public partial IQueryable<PatientDto> QueryablePatientToPatientDto(IQueryable<Patient> query);
+
+    public partial PatientDetailsDto PatientToPatientDetailsDto(Patient patient);
+
+    public partial MedicalRecordDto MedicalRecordToMedicalRecordDto(MedicalRecord record);
 }

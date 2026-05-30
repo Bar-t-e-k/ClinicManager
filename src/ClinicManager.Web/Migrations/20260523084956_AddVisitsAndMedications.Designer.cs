@@ -4,6 +4,7 @@ using ClinicManager.Web.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ClinicManager.Web.Migrations
 {
     [DbContext(typeof(ClinicDbContext))]
-    partial class ClinicDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260523084956_AddVisitsAndMedications")]
+    partial class AddVisitsAndMedications
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -46,35 +49,6 @@ namespace ClinicManager.Web.Migrations
                     b.HasIndex("VisitId");
 
                     b.ToTable("ClinicalNotes");
-                });
-
-            modelBuilder.Entity("ClinicManager.Web.Models.MedicalRecord", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("FileName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("FilePath")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("PatientId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("UploadDate")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("PatientId");
-
-                    b.ToTable("MedicalRecords");
                 });
 
             modelBuilder.Entity("ClinicManager.Web.Models.Medication", b =>
@@ -417,17 +391,6 @@ namespace ClinicManager.Web.Migrations
                     b.Navigation("Visit");
                 });
 
-            modelBuilder.Entity("ClinicManager.Web.Models.MedicalRecord", b =>
-                {
-                    b.HasOne("ClinicManager.Web.Models.Patient", "Patient")
-                        .WithMany("MedicalRecords")
-                        .HasForeignKey("PatientId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Patient");
-                });
-
             modelBuilder.Entity("ClinicManager.Web.Models.Visit", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", "Doctor")
@@ -520,11 +483,6 @@ namespace ClinicManager.Web.Migrations
             modelBuilder.Entity("ClinicManager.Web.Models.Medication", b =>
                 {
                     b.Navigation("VisitMedications");
-                });
-
-            modelBuilder.Entity("ClinicManager.Web.Models.Patient", b =>
-                {
-                    b.Navigation("MedicalRecords");
                 });
 
             modelBuilder.Entity("ClinicManager.Web.Models.Visit", b =>

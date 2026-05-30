@@ -22,5 +22,7 @@ namespace ClinicManager.Web.Models
         public string? InsuranceNumber { get; set; }
 
         public bool IsDeleted { get; set; } = false;
+
+        public ICollection<MedicalRecord> MedicalRecords { get; set; } = new List<MedicalRecord>();
     }
 }

@@ -3,6 +3,7 @@ using ClinicManager.Web.DTOs;
 using ClinicManager.Web.Mappers;
 using ClinicManager.Web.Models;
 using Microsoft.EntityFrameworkCore;
+using System.IO;
 
 namespace ClinicManager.Web.Services;
 
@@ -73,5 +74,50 @@ public class PatientService : IPatientService
 
         await _context.SaveChangesAsync();
         return true;
+    }
+
+    public async Task<PatientDetailsDto?> GetPatientDetailsAsync(int id)
+    {
+        var patient = await _context.Patients
+            .Include(p => p.MedicalRecords)
+            .FirstOrDefaultAsync(p => p.Id == id && !p.IsDeleted);
+
+        if (patient == null) return null;
+
+        return _mapper.PatientToPatientDetailsDto(patient);
+    }
+
+    public async Task<bool> AddMedicalRecordAsync(int patientId, string fileName, string filePath)
+    {
+        var patient = await _context.Patients.FindAsync(patientId);
+        if (patient == null || patient.IsDeleted) return false;
+
+        var record = new MedicalRecord
+        {
+            PatientId = patientId,
+            FileName = fileName,
+            FilePath = filePath,
+            UploadDate = DateTime.UtcNow
+        };
+
+        _context.Set<MedicalRecord>().Add(record);
+        await _context.SaveChangesAsync();
+
+        return true;
+    }
+
+    public async Task<string?> DeleteMedicalRecordAsync(int recordId, int patientId)
+    {
+        var record = await _context.Set<MedicalRecord>()
+            .FirstOrDefaultAsync(r => r.Id == recordId && r.PatientId == patientId);
+
+        if (record == null) return null;
+
+        var filePath = record.FilePath;
+
+        _context.Set<MedicalRecord>().Remove(record);
+        await _context.SaveChangesAsync();
+
+        return filePath;
     }
 }
