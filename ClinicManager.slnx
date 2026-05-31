@@ -7,7 +7,7 @@
     <Project Path="src/ClinicManager.Web/ClinicManager.Web.csproj" />
   </Folder>
   <Folder Name="/tests/">
-    <Project Path="tests/ClinicManager.Tests/ClinicManager.Tests.csproj" />
     <Project Path="tests/ClinicManager.PerformanceTests/ClinicManager.PerformanceTests.csproj" />
+    <Project Path="tests/ClinicManager.Tests/ClinicManager.Tests.csproj" />
   </Folder>
 </Solution>
