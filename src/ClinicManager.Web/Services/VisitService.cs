@@ -112,14 +112,73 @@ public class VisitService : IVisitService
         return true;
     }
 
-    public async Task<bool> DeleteVisitAsync(int id)
+    public async Task<bool> CancelVisitAsync(int id)
     {
         var visit = await _context.Visits.FindAsync(id);
         if (visit == null || visit.IsDeleted) return false;
 
-        visit.IsDeleted = true;
+        visit.Status = VisitStatus.Anulowana;
         await _context.SaveChangesAsync();
         return true;
+    }
+
+    public async Task<string?> GetVisitDoctorIdAsync(int visitId)
+    {
+        return await _context.Visits
+            .AsNoTracking()
+            .Where(v => v.Id == visitId && !v.IsDeleted)
+            .Select(v => v.DoctorId)
+            .FirstOrDefaultAsync();
+    }
+
+    public async Task<IReadOnlyList<VisitDto>> GetPlannedVisitsForDateAsync(DateTime date)
+    {
+        var dayStart = date.Date;
+        var dayEnd = dayStart.AddDays(1);
+
+        var visits = await _context.Visits
+            .AsNoTracking()
+            .Include(v => v.Patient)
+            .Include(v => v.Doctor)
+            .Where(v => !v.IsDeleted
+                        && v.ScheduledDate >= dayStart
+                        && v.ScheduledDate < dayEnd
+                        && (v.Status == VisitStatus.Zaplanowana || v.Status == VisitStatus.Potwierdzona))
+            .OrderBy(v => v.ScheduledDate)
+            .ToListAsync();
+
+        return visits.Select(MapToDto).ToList();
+    }
+
+    public async Task<IReadOnlyList<ActiveVisitApiDto>> GetActiveVisitsAsync()
+    {
+        var visits = await _context.Visits
+            .AsNoTracking()
+            .Include(v => v.Patient)
+            .Include(v => v.Doctor)
+            .Include(v => v.VisitMedications)
+            .Where(v => !v.IsDeleted
+                        && (v.Status == VisitStatus.Zaplanowana
+                            || v.Status == VisitStatus.Potwierdzona
+                            || v.Status == VisitStatus.WTrakcie))
+            .OrderBy(v => v.ScheduledDate)
+            .ToListAsync();
+
+        return visits.Select(v => new ActiveVisitApiDto
+        {
+            Id = v.Id,
+            PatientId = v.PatientId,
+            PatientFullName = $"{v.Patient.FirstName} {v.Patient.LastName}",
+            PatientPesel = v.Patient.Pesel,
+            PatientInsuranceNumber = v.Patient.InsuranceNumber,
+            DoctorId = v.DoctorId,
+            DoctorName = v.Doctor.Email ?? v.Doctor.UserName ?? v.DoctorId,
+            ScheduledDate = v.ScheduledDate,
+            Status = GetStatusDisplay(v.Status),
+            Description = v.Description,
+            TotalCost = v.TotalCost,
+            MedicationCount = v.VisitMedications.Count
+        }).ToList();
     }
 
     public async Task<bool> AddClinicalNoteAsync(int visitId, CreateClinicalNoteDto dto)

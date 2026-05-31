@@ -72,6 +72,7 @@ appsettings.Local.json
 
 # NBomber
 nbomber-report/
+nbomber-report.pdf
 
 # Logs
 logs/
@@ -84,3 +85,6 @@ logs/
 # Ignore directory uploads
 wwwroot/uploads/*
 !wwwroot/uploads/.gitkeep
+
+# Generated visit reports (BackgroundService)
+reports/

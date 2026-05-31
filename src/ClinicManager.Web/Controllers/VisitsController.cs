@@ -46,13 +46,8 @@ public class VisitsController : Controller
         var visit = await _visitService.GetVisitDetailsAsync(id);
         if (visit == null) return NotFound();
 
-        // Lekarz może zobaczyć tylko swoją wizytę
-        if (!User.IsInRole("Admin") && !User.IsInRole("Rejestratorka"))
-        {
-            var user = await _userManager.GetUserAsync(User);
-            if (visit.DoctorId != user?.Id)
-                return Forbid();
-        }
+        var accessDenied = await AuthorizeDoctorVisitAccessAsync(visit.DoctorId);
+        if (accessDenied != null) return accessDenied;
 
         var medications = await _medicationService.GetAllMedicationsAsync();
         ViewBag.MedicationSelectList = medications
@@ -122,6 +117,9 @@ public class VisitsController : Controller
     [Authorize(Roles = "Admin,Lekarz")]
     public async Task<IActionResult> AddNote(int visitId, CreateClinicalNoteDto dto)
     {
+        var accessDenied = await AuthorizeDoctorVisitAccessAsync(visitId);
+        if (accessDenied != null) return accessDenied;
+
         if (!ModelState.IsValid)
         {
             TempData["Error"] = "Treść notatki jest nieprawidłowa.";
@@ -137,6 +135,9 @@ public class VisitsController : Controller
     [Authorize(Roles = "Admin,Lekarz")]
     public async Task<IActionResult> DeleteNote(int noteId, int visitId)
     {
+        var accessDenied = await AuthorizeDoctorVisitAccessAsync(visitId);
+        if (accessDenied != null) return accessDenied;
+
         var result = await _visitService.DeleteClinicalNoteAsync(noteId, visitId);
         if (!result)
             TempData["Error"] = "Nie udało się usunąć notatki.";
@@ -149,6 +150,9 @@ public class VisitsController : Controller
     [Authorize(Roles = "Admin,Lekarz")]
     public async Task<IActionResult> AddMedication(int visitId, AddMedicationToVisitDto dto)
     {
+        var accessDenied = await AuthorizeDoctorVisitAccessAsync(visitId);
+        if (accessDenied != null) return accessDenied;
+
         if (!ModelState.IsValid)
         {
             TempData["Error"] = "Nieprawidłowe dane leku.";
@@ -167,6 +171,9 @@ public class VisitsController : Controller
     [Authorize(Roles = "Admin,Lekarz")]
     public async Task<IActionResult> RemoveMedication(int visitMedicationId, int visitId)
     {
+        var accessDenied = await AuthorizeDoctorVisitAccessAsync(visitId);
+        if (accessDenied != null) return accessDenied;
+
         await _visitService.RemoveMedicationAsync(visitMedicationId);
         return RedirectToAction(nameof(Details), new { id = visitId });
     }
@@ -176,9 +183,46 @@ public class VisitsController : Controller
     [Authorize(Roles = "Admin,Rejestratorka")]
     public async Task<IActionResult> Delete(int id)
     {
-        await _visitService.DeleteVisitAsync(id);
+        await _visitService.CancelVisitAsync(id);
         TempData["Success"] = "Wizyta została anulowana.";
         return RedirectToAction(nameof(Index));
+    }
+
+    /// <summary>
+    /// Lekarz (bez roli Admin/Rejestratorka) może modyfikować tylko własne wizyty.
+    /// </summary>
+    private async Task<IActionResult?> AuthorizeDoctorVisitAccessAsync(int visitId)
+    {
+        if (User.IsInRole("Admin") || User.IsInRole("Rejestratorka"))
+            return null;
+
+        if (!User.IsInRole("Lekarz"))
+            return null;
+
+        var doctorId = await _visitService.GetVisitDoctorIdAsync(visitId);
+        if (doctorId == null)
+            return NotFound();
+
+        var user = await _userManager.GetUserAsync(User);
+        if (user == null || doctorId != user.Id)
+            return Forbid();
+
+        return null;
+    }
+
+    private async Task<IActionResult?> AuthorizeDoctorVisitAccessAsync(string visitDoctorId)
+    {
+        if (User.IsInRole("Admin") || User.IsInRole("Rejestratorka"))
+            return null;
+
+        if (!User.IsInRole("Lekarz"))
+            return null;
+
+        var user = await _userManager.GetUserAsync(User);
+        if (user == null || visitDoctorId != user.Id)
+            return Forbid();
+
+        return null;
     }
 
     private async Task PopulateCreateViewBagsAsync()

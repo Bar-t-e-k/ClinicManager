@@ -1,3 +1,5 @@
+using ClinicManager.Web.BackgroundServices;
+using ClinicManager.Web.Configuration;
 using ClinicManager.Web.Data;
 using ClinicManager.Web.Filters;
 using ClinicManager.Web.Services;
@@ -38,6 +40,12 @@ try
     builder.Services.AddScoped<IPatientService, PatientService>();
     builder.Services.AddScoped<IVisitService, VisitService>();
     builder.Services.AddScoped<IMedicationService, MedicationService>();
+    builder.Services.AddScoped<IUpcomingVisitsReportService, UpcomingVisitsReportService>();
+    builder.Services.AddSingleton<IEmailSender, SmtpEmailSender>();
+
+    builder.Services.Configure<UpcomingVisitsReportOptions>(
+        builder.Configuration.GetSection(UpcomingVisitsReportOptions.SectionName));
+    builder.Services.AddHostedService<UpcomingVisitsReportBackgroundService>();
 
     // 4. Rejestracja kontrolerów oraz dodanie globalnego filtra wyjątków
     builder.Services.AddControllersWithViews(options =>
@@ -47,9 +55,20 @@ try
 
     builder.Services.AddRazorPages();
 
+    builder.Services.AddEndpointsApiExplorer();
+    builder.Services.AddSwaggerGen();
+
     var app = builder.Build();
 
-    if (!app.Environment.IsDevelopment())
+    if (app.Environment.IsDevelopment())
+    {
+        app.UseSwagger();
+        app.UseSwaggerUI(options =>
+        {
+            options.SwaggerEndpoint("/swagger/v1/swagger.json", "ClinicManager API v1");
+        });
+    }
+    else
     {
         app.UseExceptionHandler("/Home/Error");
         app.UseHsts();
@@ -69,6 +88,7 @@ try
         .WithStaticAssets();
 
     app.MapRazorPages();
+    app.MapControllers();
 
     using (var scope = app.Services.CreateScope())
     {

@@ -73,5 +73,10 @@ public class ClinicDbContext : IdentityDbContext<IdentityUser>
         modelBuilder.Entity<VisitMedication>()
             .Property(vm => vm.UnitPrice)
             .HasColumnType("decimal(10,2)");
+
+        modelBuilder.Entity<Patient>()
+            .HasIndex(p => p.Pesel)
+            .IsUnique()
+            .HasFilter("[IsDeleted] = 0");
     }
 }

@@ -37,9 +37,11 @@ public class PatientServiceTests
         };
 
         // Act
-        var resultId = await service.CreatePatientAsync(dto);
+        var (resultId, error) = await service.CreatePatientAsync(dto);
 
         // Assert
+        Assert.Null(error);
+        Assert.NotNull(resultId);
         var patientInDb = await context.Set<Patient>().FindAsync(resultId);
         Assert.NotNull(patientInDb);
         Assert.Equal("Jan", patientInDb.FirstName);
@@ -220,7 +222,47 @@ public class VisitServiceTests
     }
 
     [Fact]
-    public async Task DeleteVisitAsync_ShouldSetIsDeletedFlag()
+    public async Task CreatePatientAsync_ShouldFail_WhenPeselAlreadyExists()
+    {
+        var context = await GetInMemoryDbContextAsync();
+        context.Patients.Add(new Patient { FirstName = "Jan", LastName = "Kowalski", Pesel = "12345678901" });
+        await context.SaveChangesAsync();
+
+        var service = new PatientService(context);
+        var (patientId, error) = await service.CreatePatientAsync(new CreateUpdatePatientDto
+        {
+            FirstName = "Adam",
+            LastName = "Nowak",
+            Pesel = "12345678901"
+        });
+
+        Assert.Null(patientId);
+        Assert.NotNull(error);
+    }
+
+    [Fact]
+    public async Task GetActiveVisitsAsync_ShouldReturnOnlyActiveStatuses()
+    {
+        var context = await GetInMemoryDbContextAsync();
+        var (patient, doctor) = await SeedVisitPrerequisitesAsync(context);
+        var userManager = GetMockUserManager(doctor);
+        var service = new VisitService(context, userManager);
+
+        context.Visits.AddRange(
+            new Visit { PatientId = patient.Id, DoctorId = doctor.Id, ScheduledDate = DateTime.Today.AddDays(1), Status = VisitStatus.Zaplanowana },
+            new Visit { PatientId = patient.Id, DoctorId = doctor.Id, ScheduledDate = DateTime.Today.AddDays(2), Status = VisitStatus.Zakonczona },
+            new Visit { PatientId = patient.Id, DoctorId = doctor.Id, ScheduledDate = DateTime.Today.AddDays(3), Status = VisitStatus.Anulowana });
+        await context.SaveChangesAsync();
+
+        var result = await service.GetActiveVisitsAsync();
+
+        Assert.Single(result);
+        Assert.Equal("Zaplanowana", result[0].Status);
+        Assert.Equal(patient.Pesel, result[0].PatientPesel);
+    }
+
+    [Fact]
+    public async Task CancelVisitAsync_ShouldSetStatusToAnulowana()
     {
         // Arrange
         var context = await GetInMemoryDbContextAsync();
@@ -239,12 +281,13 @@ public class VisitServiceTests
         await context.SaveChangesAsync();
 
         // Act
-        var result = await service.DeleteVisitAsync(visit.Id);
+        var result = await service.CancelVisitAsync(visit.Id);
 
         // Assert
         Assert.True(result);
         var visitInDb = await context.Visits.FindAsync(visit.Id);
-        Assert.True(visitInDb!.IsDeleted);
+        Assert.False(visitInDb!.IsDeleted);
+        Assert.Equal(VisitStatus.Anulowana, visitInDb.Status);
     }
 
     [Fact]

@@ -37,7 +37,14 @@ public class PatientsController : Controller
     public async Task<IActionResult> Create(CreateUpdatePatientDto dto)
     {
         if (!ModelState.IsValid) return View(dto);
-        await _patientService.CreatePatientAsync(dto);
+
+        var (patientId, error) = await _patientService.CreatePatientAsync(dto);
+        if (patientId == null)
+        {
+            ModelState.AddModelError(nameof(dto.Pesel), error ?? "Nie udało się dodać pacjenta.");
+            return View(dto);
+        }
+
         TempData["Success"] = "Pacjent został dodany.";
         return RedirectToAction(nameof(Index));
     }
@@ -63,8 +70,15 @@ public class PatientsController : Controller
     public async Task<IActionResult> Edit(int id, CreateUpdatePatientDto dto)
     {
         if (!ModelState.IsValid) return View(dto);
-        var success = await _patientService.UpdatePatientAsync(id, dto);
-        if (!success) return NotFound();
+
+        var (success, error) = await _patientService.UpdatePatientAsync(id, dto);
+        if (!success && error == null) return NotFound();
+        if (!success)
+        {
+            ModelState.AddModelError(nameof(dto.Pesel), error!);
+            return View(dto);
+        }
+
         TempData["Success"] = "Dane pacjenta zostały zaktualizowane.";
         return RedirectToAction(nameof(Index));
     }
