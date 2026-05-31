@@ -74,9 +74,15 @@ public class ClinicDbContext : IdentityDbContext<IdentityUser>
             .Property(vm => vm.UnitPrice)
             .HasColumnType("decimal(10,2)");
 
+        // US#9: wyszukiwanie po PESEL (równość / unikalność aktywnych pacjentów)
         modelBuilder.Entity<Patient>()
             .HasIndex(p => p.Pesel)
             .IsUnique()
+            .HasFilter("[IsDeleted] = 0");
+
+        // US#9: filtrowanie wizyt po lekarzu + sortowanie po dacie
+        modelBuilder.Entity<Visit>()
+            .HasIndex(v => new { v.DoctorId, v.ScheduledDate })
             .HasFilter("[IsDeleted] = 0");
     }
 }

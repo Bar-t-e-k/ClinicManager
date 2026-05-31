@@ -118,6 +118,25 @@ Wyniki:
 
 Test wydajnościowy **nie** jest uruchamiany przez `dotnet test` (osobny projekt konsolowy).
 
+## 🗄️ Optymalizacja bazy danych – indeksy (US#9)
+
+Przyspieszenie wyszukiwania po **PESEL** (pacjenci) i **lekarzu** (wizyty).
+
+**Indeksy Non-Clustered (EF Core Fluent API)** – `ClinicDbContext.cs`:
+
+| Indeks | Tabela | Kolumny | Filtr |
+|--------|--------|---------|-------|
+| `IX_Patients_Pesel` | Patients | Pesel (UNIQUE) | `[IsDeleted] = 0` |
+| `IX_Visits_DoctorId_ScheduledDate` | Visits | DoctorId, ScheduledDate | `[IsDeleted] = 0` |
+
+Migracje: `AddUniquePeselIndex`, `AddDoctorVisitSearchIndex`.
+
+**Testowanie krok po kroku:** [`docs/US9-PORADNIK-TESTOWANIA.md`](docs/US9-PORADNIK-TESTOWANIA.md) ← **zacznij tutaj**
+
+Skrót: Docker → migracje → SSMS → `00` (usuń indeksy) → `01` (screenshoty PRZED) → `03` (przywróć) → `02` (screenshoty PO) → PDF.
+
+Opis techniczny: [`docs/US9-analiza-indeksow.md`](docs/US9-analiza-indeksow.md).
+
 ## ❓ Rozwiązywanie problemów
 * **Błąd logowania SA w Dockerze:** Upewnij się, że kontener `clinic-sql` działa (`docker ps`). Jeśli zmieniłeś hasło w komendzie `docker run`, musisz je również zaktualizować w `user-secrets`.
 * **Błąd migracji:** Jeśli `dotnet ef database update` nie działa, upewnij się, że jesteś w głównym folderze projektu i masz zainstalowane narzędzia `dotnet-ef`.

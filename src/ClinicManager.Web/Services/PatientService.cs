@@ -24,7 +24,11 @@ public class PatientService : IPatientService
 
         if (!string.IsNullOrWhiteSpace(searchTerm))
         {
-            query = query.Where(p => p.LastName.Contains(searchTerm) || p.Pesel.Contains(searchTerm));
+            // Pełny PESEL (11 cyfr) → równość i Index Seek na IX_Patients_Pesel
+            if (searchTerm.Length == 11 && searchTerm.All(char.IsDigit))
+                query = query.Where(p => p.Pesel == searchTerm);
+            else
+                query = query.Where(p => p.LastName.Contains(searchTerm) || p.Pesel.Contains(searchTerm));
         }
 
         var patients = await query.ToListAsync();
