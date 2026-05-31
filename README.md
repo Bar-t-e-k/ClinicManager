@@ -68,17 +68,75 @@ Aplikacja nie przechowuje haseł w plikach konfiguracyjnych. Skonfiguruj własne
 ```bash
 dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=localhost,1433;Database=ClinicManagerDb;User Id=sa;Password=ClinicAdmin!2026;TrustServerCertificate=True;MultipleActiveResultSets=true" --project src/ClinicManager.Web
 dotnet user-secrets set "SeedData:AdminPassword" "Admin123!" --project src/ClinicManager.Web
+dotnet user-secrets set "SeedData:DoctorPassword" "Lekarz123!" --project src/ClinicManager.Web
+dotnet user-secrets set "SeedData:RegPassword" "Rej123!" --project src/ClinicManager.Web
 ```
 
 ## 🔐 Dane do logowania (Seed Data)
 
-Aplikacja automatycznie konfiguruje system Identity i tworzy domyślnego administratora przy pierwszym uruchomieniu:
+Aplikacja tworzy konta testowe przy pierwszym uruchomieniu (hasła muszą być ustawione w User Secrets – patrz wyżej):
 
-- **Login:** `admin@clinic.com`
-- **Hasło:** `Admin123!`
+| Rola | Login | Hasło (domyślne) |
+|------|-------|------------------|
+| Admin | `admin@clinic.com` | `Admin123!` |
+| Lekarz | `lekarz@clinic.com` | `Lekarz123!` |
+| Rejestratorka | `rejestracja@clinic.com` | `Rej123!` |
 
 **Dostępne role w systemie:** `Admin`, `Lekarz`, `Rejestratorka`.
+
+## 📧 Raport nadchodzących wizyt (US#7)
+
+Usługa w tle (`UpcomingVisitsReportBackgroundService`) generuje PDF z wizytami na **jutro** i wysyła go e-mailem (SMTP / MailKit). Plik: `src/ClinicManager.Web/reports/raport-nadchodzace-wizyty.pdf`.
+
+Konfiguracja: sekcja `UpcomingVisitsReport` w `appsettings.json`, nadpisanie przez User Secrets.
+
+**Mailtrap:** użyj zakładki **Email Testing → Inbox → SMTP Settings** (host, port, username, password). Nie używaj API tokena z produktu *Email Sending* – aplikacja łączy się przez SMTP.
+
+Przed testem dodaj w systemie **2–3 wizyty na jutro** (status: Zaplanowana lub Potwierdzona).
+
+```bash
+dotnet user-secrets set "UpcomingVisitsReport:IntervalMinutes" "2" --project src/ClinicManager.Web
+dotnet user-secrets set "UpcomingVisitsReport:AdminEmail" "twoj@email.pl" --project src/ClinicManager.Web
+dotnet user-secrets set "UpcomingVisitsReport:Smtp:Host" "sandbox.smtp.mailtrap.io" --project src/ClinicManager.Web
+dotnet user-secrets set "UpcomingVisitsReport:Smtp:Port" "587" --project src/ClinicManager.Web
+dotnet user-secrets set "UpcomingVisitsReport:Smtp:UseSsl" "true" --project src/ClinicManager.Web
+```
+
+Następnie skopiuj z Mailtrap pola **Username** i **Password** (przycisk *Show password*) i ustaw je w osobnych komendach – w cudzysłowie wklejasz dokładnie to, co widzisz w panelu:
+
+```bash
+dotnet user-secrets set "UpcomingVisitsReport:Smtp:Username" "TWOJ_USERNAME_Z_MAILTRAP" --project src/ClinicManager.Web
+dotnet user-secrets set "UpcomingVisitsReport:Smtp:Password" "TWOJE_HASLO_Z_MAILTRAP" --project src/ClinicManager.Web
+```
+
+Po `dotnet run` (domyślnie co 2 min w tej konfiguracji) sprawdź folder `reports/` oraz skrzynkę Mailtrap. Na produkcji ustaw `IntervalMinutes` na `1440`.
+
+## 📈 Testy wydajności NBomber (US#8)
+
+Endpoint API pod obciążenie: **GET `/api/visits/active`** – aktywne wizyty z danymi pacjenta i lekarza (zapytanie z JOIN-ami). Dokumentacja w Swaggerze (Development): `/swagger`.
+
+Kod testu: `tests/ClinicManager.PerformanceTests/VisitsLoadTest.cs`  
+Scenariusz: **50** równoległych użytkowników + **100** żądań.
+
+**Uruchomienie** (wymaga działającej aplikacji na `http://localhost:5215`):
+
+```bash
+# Terminal 1
+dotnet run --project src/ClinicManager.Web
+
+# Terminal 2 (z katalogu repozytorium)
+dotnet run --project tests/ClinicManager.PerformanceTests
+```
+
+Wyniki:
+- `nbomber-report.pdf` – raport PDF (czasy odpowiedzi, RPS, błędy)
+- folder `nbomber-report/` – raport HTML/TXT z NBomber
+
+Test wydajnościowy **nie** jest uruchamiany przez `dotnet test` (osobny projekt konsolowy).
 
 ## ❓ Rozwiązywanie problemów
 * **Błąd logowania SA w Dockerze:** Upewnij się, że kontener `clinic-sql` działa (`docker ps`). Jeśli zmieniłeś hasło w komendzie `docker run`, musisz je również zaktualizować w `user-secrets`.
 * **Błąd migracji:** Jeśli `dotnet ef database update` nie działa, upewnij się, że jesteś w głównym folderze projektu i masz zainstalowane narzędzia `dotnet-ef`.
+* **Port 5215 zajęty:** Zatrzymaj poprzedni `dotnet run` (Ctrl+C) lub zamknij proces `ClinicManager.Web.exe`.
+* **Raport e-mail:** SMTP z Mailtrap Email Testing (nie API Sending). Wizyty muszą być zaplanowane na **jutro**. Błąd autoryzacji SMTP – sprawdź Username i Password w user-secrets.
+* **NBomber – brak połączenia:** Najpierw uruchom `ClinicManager.Web`, potem projekt `ClinicManager.PerformanceTests`. Sprawdź endpoint w przeglądarce: `/api/visits/active`.

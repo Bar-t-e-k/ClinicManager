@@ -41,27 +41,41 @@ public class PatientService : IPatientService
         return _mapper.PatientToPatientDto(patient);
     }
 
-    public async Task<int> CreatePatientAsync(CreateUpdatePatientDto dto)
+    public async Task<(int? PatientId, string? Error)> CreatePatientAsync(CreateUpdatePatientDto dto)
     {
+        if (await PeselExistsAsync(dto.Pesel))
+            return (null, "Pacjent z tym numerem PESEL już istnieje w systemie.");
+
         var patient = _mapper.CreatePatientDtoToPatient(dto);
 
         _context.Set<Patient>().Add(patient);
         await _context.SaveChangesAsync();
 
-        return patient.Id;
+        return (patient.Id, null);
     }
 
-    public async Task<bool> UpdatePatientAsync(int id, CreateUpdatePatientDto dto)
+    public async Task<(bool Success, string? Error)> UpdatePatientAsync(int id, CreateUpdatePatientDto dto)
     {
         var patient = await _context.Set<Patient>()
             .FirstOrDefaultAsync(p => p.Id == id && !p.IsDeleted);
 
-        if (patient == null) return false;
+        if (patient == null) return (false, null);
+
+        if (await PeselExistsAsync(dto.Pesel, id))
+            return (false, "Pacjent z tym numerem PESEL już istnieje w systemie.");
 
         _mapper.UpdatePatientFromDto(dto, patient);
         await _context.SaveChangesAsync();
 
-        return true;
+        return (true, null);
+    }
+
+    private async Task<bool> PeselExistsAsync(string pesel, int? excludePatientId = null)
+    {
+        return await _context.Patients.AnyAsync(p =>
+            !p.IsDeleted
+            && p.Pesel == pesel
+            && (excludePatientId == null || p.Id != excludePatientId));
     }
 
     public async Task<bool> DeletePatientAsync(int id)

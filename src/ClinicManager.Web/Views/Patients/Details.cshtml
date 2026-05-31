@@ -1,7 +1,8 @@
 ﻿@model ClinicManager.Web.DTOs.PatientDetailsDto
 
 <h2>Profil Pacjenta: @Model.FirstName @Model.LastName</h2>
-<p>PESEL: @Model.Pesel</p>
+<p class="mb-1">PESEL: @Model.Pesel</p>
+<p class="text-muted">Nr ubezpieczenia: @(string.IsNullOrWhiteSpace(Model.InsuranceNumber) ? "—" : Model.InsuranceNumber)</p>
 
 <div class="card mt-4">
 	<div class="card-header">Dodaj nowy dokument</div>

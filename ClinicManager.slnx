@@ -8,5 +8,6 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/ClinicManager.Tests/ClinicManager.Tests.csproj" />
+    <Project Path="tests/ClinicManager.PerformanceTests/ClinicManager.PerformanceTests.csproj" />
   </Folder>
 </Solution>
