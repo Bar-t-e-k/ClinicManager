@@ -13,21 +13,15 @@ namespace ClinicManager.Tests;
 public class PatientsControllerTests
 {
     private readonly Mock<IPatientService> _mockService;
-    private readonly Mock<IWebHostEnvironment> _mockEnv;
+    private readonly Mock<IFileStorageService> _mockFileStorage;
     private readonly PatientsController _controller;
 
     public PatientsControllerTests()
     {
         _mockService = new Mock<IPatientService>();
-        _mockEnv = new Mock<IWebHostEnvironment>();
+        _mockFileStorage = new Mock<IFileStorageService>();
 
-        var tempPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
-
-        Directory.CreateDirectory(tempPath);
-
-        _mockEnv.Setup(m => m.WebRootPath).Returns(tempPath);
-
-        _controller = new PatientsController(_mockService.Object, _mockEnv.Object)
+        _controller = new PatientsController(_mockService.Object, _mockFileStorage.Object)
         {
             TempData = new TempDataDictionary(new DefaultHttpContext(), Mock.Of<ITempDataProvider>())
         };
@@ -82,9 +76,12 @@ public class PatientsControllerTests
         // Arrange
         int patientId = 1;
         int recordId = 10;
+        string fakePath = "/uploads/fake-file.pdf";
 
         _mockService.Setup(s => s.DeleteMedicalRecordAsync(recordId, patientId))
-            .ReturnsAsync("/uploads/fake-file.pdf");
+            .ReturnsAsync(fakePath);
+
+        _mockFileStorage.Setup(s => s.DeleteFile(fakePath));
 
         // Act
         var result = await _controller.DeleteDocument(recordId, patientId);
@@ -93,6 +90,8 @@ public class PatientsControllerTests
         var redirectResult = Assert.IsType<RedirectToActionResult>(result);
         Assert.Equal("Details", redirectResult.ActionName);
         Assert.Equal(patientId, redirectResult.RouteValues["id"]);
+
+        _mockFileStorage.Verify(s => s.DeleteFile(fakePath), Times.Once);
     }
 
     [Fact]
@@ -124,15 +123,16 @@ public class PatientsControllerTests
         // Arrange
         int patientId = 1;
         string validFileName = "wyniki_badan.pdf";
+        string fakeSavedPath = "/uploads/" + validFileName;
 
         var mockFile = new Mock<IFormFile>();
         mockFile.Setup(f => f.FileName).Returns(validFileName);
         mockFile.Setup(f => f.Length).Returns(1024);
 
-        mockFile.Setup(f => f.CopyToAsync(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
+        _mockFileStorage.Setup(s => s.SaveFileAsync(mockFile.Object, It.IsAny<string>()))
+            .ReturnsAsync(fakeSavedPath);
 
-        _mockService.Setup(s => s.AddMedicalRecordAsync(patientId, validFileName, It.IsAny<string>()))
+        _mockService.Setup(s => s.AddMedicalRecordAsync(patientId, validFileName, fakeSavedPath))
             .ReturnsAsync(true);
 
         // Act
@@ -144,6 +144,7 @@ public class PatientsControllerTests
 
         Assert.Equal("Dokument został wgrany.", _controller.TempData["Success"]);
 
-        _mockService.Verify(s => s.AddMedicalRecordAsync(patientId, validFileName, It.IsAny<string>()), Times.Once);
+        _mockFileStorage.Verify(s => s.SaveFileAsync(mockFile.Object, It.IsAny<string>()), Times.Once);
+        _mockService.Verify(s => s.AddMedicalRecordAsync(patientId, validFileName, fakeSavedPath), Times.Once);
     }
 }

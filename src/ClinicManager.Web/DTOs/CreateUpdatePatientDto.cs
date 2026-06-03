@@ -17,4 +17,8 @@ public class CreateUpdatePatientDto
     public string Pesel { get; set; } = string.Empty;
 
     public string? InsuranceNumber { get; set; }
+
+    public IFormFile? AvatarFile { get; set; }
+
+    public string? AvatarUrl { get; set; }
 }

@@ -7,4 +7,6 @@ public class PatientDto
     public string LastName { get; set; } = string.Empty;
     public string Pesel { get; set; } = string.Empty;
     public string? InsuranceNumber { get; set; }
+
+    public string? AvatarUrl { get; set; }
 }
