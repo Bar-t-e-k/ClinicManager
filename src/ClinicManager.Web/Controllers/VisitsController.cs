@@ -14,30 +14,40 @@ public class VisitsController : Controller
     private readonly IVisitService _visitService;
     private readonly IPatientService _patientService;
     private readonly IMedicationService _medicationService;
+    private readonly IProcedureService _procedureService;
     private readonly UserManager<IdentityUser> _userManager;
 
     public VisitsController(
         IVisitService visitService,
         IPatientService patientService,
         IMedicationService medicationService,
+        IProcedureService procedureService,
         UserManager<IdentityUser> userManager)
     {
         _visitService = visitService;
         _patientService = patientService;
         _medicationService = medicationService;
+        _procedureService = procedureService;
         _userManager = userManager;
     }
 
     public async Task<IActionResult> Index()
     {
-        string? doctorFilter = null;
-        if (!User.IsInRole("Admin") && !User.IsInRole("Rejestratorka"))
-        {
-            var user = await _userManager.GetUserAsync(User);
-            doctorFilter = user?.Id;
-        }
+        if (User.IsInRole("Admin") || User.IsInRole("Rejestratorka"))
+            return View(await _visitService.GetAllVisitsAsync());
 
-        var visits = await _visitService.GetAllVisitsAsync(doctorFilter);
+        var user = await _userManager.GetUserAsync(User);
+        if (user == null) return Forbid();
+
+        if (User.IsInRole("Lekarz"))
+            return View(await _visitService.GetAllVisitsAsync(user.Id));
+
+        // Pacjent — tylko wizyty powiązane z jego rekordem pacjenta.
+        var patientId = await _patientService.GetPatientIdByUserIdAsync(user.Id);
+        var visits = patientId == null
+            ? Enumerable.Empty<VisitDto>()
+            : await _visitService.GetVisitsByPatientAsync(patientId.Value);
+
         return View(visits);
     }
 
@@ -46,7 +56,7 @@ public class VisitsController : Controller
         var visit = await _visitService.GetVisitDetailsAsync(id);
         if (visit == null) return NotFound();
 
-        var accessDenied = await AuthorizeDoctorVisitAccessAsync(visit.DoctorId);
+        var accessDenied = await AuthorizeVisitViewAccessAsync(visit);
         if (accessDenied != null) return accessDenied;
 
         var medications = await _medicationService.GetAllMedicationsAsync();
@@ -56,6 +66,15 @@ public class VisitsController : Controller
             {
                 Value = m.Id.ToString(),
                 Text = $"{m.Name} ({m.Price:C})"
+            }).ToList();
+
+        var procedures = await _procedureService.GetAllProceduresAsync();
+        ViewBag.ProcedureSelectList = procedures
+            .Where(p => p.IsActive)
+            .Select(p => new SelectListItem
+            {
+                Value = p.Id.ToString(),
+                Text = $"{p.Description} ({p.Cost:C})"
             }).ToList();
 
         ViewBag.StatusSelectList = GetStatusSelectList(visit.Status);
@@ -180,6 +199,39 @@ public class VisitsController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [Authorize(Roles = "Admin,Lekarz")]
+    public async Task<IActionResult> AddProcedure(int visitId, AddProcedureToVisitDto dto)
+    {
+        var accessDenied = await AuthorizeDoctorVisitAccessAsync(visitId);
+        if (accessDenied != null) return accessDenied;
+
+        if (!ModelState.IsValid)
+        {
+            TempData["Error"] = "Nieprawidłowe dane procedury.";
+            return RedirectToAction(nameof(Details), new { id = visitId });
+        }
+
+        var (success, error) = await _visitService.AddProcedureAsync(visitId, dto);
+        if (!success)
+            TempData["Error"] = error;
+
+        return RedirectToAction(nameof(Details), new { id = visitId });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = "Admin,Lekarz")]
+    public async Task<IActionResult> RemoveProcedure(int visitProcedureId, int visitId)
+    {
+        var accessDenied = await AuthorizeDoctorVisitAccessAsync(visitId);
+        if (accessDenied != null) return accessDenied;
+
+        await _visitService.RemoveProcedureAsync(visitProcedureId);
+        return RedirectToAction(nameof(Details), new { id = visitId });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
     [Authorize(Roles = "Admin,Rejestratorka")]
     public async Task<IActionResult> Delete(int id)
     {
@@ -196,8 +248,9 @@ public class VisitsController : Controller
         if (User.IsInRole("Admin") || User.IsInRole("Rejestratorka"))
             return null;
 
+        // Każdy inny użytkownik (w tym bez przypisanej roli) ma dostęp tylko jako lekarz-właściciel wizyty.
         if (!User.IsInRole("Lekarz"))
-            return null;
+            return Forbid();
 
         var doctorId = await _visitService.GetVisitDoctorIdAsync(visitId);
         if (doctorId == null)
@@ -210,19 +263,26 @@ public class VisitsController : Controller
         return null;
     }
 
-    private async Task<IActionResult?> AuthorizeDoctorVisitAccessAsync(string visitDoctorId)
+    /// <summary>
+    /// Dostęp do podglądu wizyty: Admin/Rejestratorka — wszystko, Lekarz — własne wizyty,
+    /// Pacjent — wyłącznie wizyty powiązane z jego rekordem pacjenta. Pozostali — brak dostępu.
+    /// </summary>
+    private async Task<IActionResult?> AuthorizeVisitViewAccessAsync(VisitDetailsDto visit)
     {
         if (User.IsInRole("Admin") || User.IsInRole("Rejestratorka"))
             return null;
 
-        if (!User.IsInRole("Lekarz"))
+        var user = await _userManager.GetUserAsync(User);
+        if (user == null) return Forbid();
+
+        if (User.IsInRole("Lekarz"))
+            return visit.DoctorId == user.Id ? null : Forbid();
+
+        var patientId = await _patientService.GetPatientIdByUserIdAsync(user.Id);
+        if (patientId != null && patientId.Value == visit.PatientId)
             return null;
 
-        var user = await _userManager.GetUserAsync(User);
-        if (user == null || visitDoctorId != user.Id)
-            return Forbid();
-
-        return null;
+        return Forbid();
     }
 
     private async Task PopulateCreateViewBagsAsync()

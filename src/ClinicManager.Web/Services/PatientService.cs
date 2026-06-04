@@ -150,6 +150,44 @@ public class PatientService : IPatientService
         return true;
     }
 
+    public async Task<(bool Success, string? Error)> LinkOrCreatePatientForUserAsync(string userId, string pesel, string firstName, string lastName)
+    {
+        // Konto może być powiązane tylko z jednym pacjentem.
+        var alreadyLinked = await _context.Patients.AnyAsync(p => p.UserId == userId);
+        if (alreadyLinked)
+            return (false, "To konto jest już powiązane z pacjentem.");
+
+        var existing = await _context.Patients.FirstOrDefaultAsync(p => p.Pesel == pesel);
+        if (existing != null)
+        {
+            if (!string.IsNullOrEmpty(existing.UserId))
+                return (false, "Pacjent o tym numerze PESEL ma już przypisane konto.");
+
+            existing.UserId = userId;
+            await _context.SaveChangesAsync();
+            return (true, null);
+        }
+
+        var patient = new Patient
+        {
+            FirstName = firstName,
+            LastName = lastName,
+            Pesel = pesel,
+            UserId = userId
+        };
+        _context.Patients.Add(patient);
+        await _context.SaveChangesAsync();
+        return (true, null);
+    }
+
+    public async Task<int?> GetPatientIdByUserIdAsync(string userId)
+    {
+        return await _context.Patients
+            .Where(p => p.UserId == userId)
+            .Select(p => (int?)p.Id)
+            .FirstOrDefaultAsync();
+    }
+
     public async Task<string?> DeleteMedicalRecordAsync(int recordId, int patientId)
     {
         var record = await _context.Set<MedicalRecord>()

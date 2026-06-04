@@ -26,9 +26,12 @@
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Patients" asp-action="Index">Pacjenci</a>
-                        </li>
+                        @if (User.IsInRole("Admin") || User.IsInRole("Lekarz") || User.IsInRole("Rejestratorka"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Patients" asp-action="Index">Pacjenci</a>
+                            </li>
+                        }
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-controller="Visits" asp-action="Index">Wizyty</a>
                         </li>
@@ -36,6 +39,9 @@
                         {
                             <li class="nav-item">
                                 <a class="nav-link text-dark" asp-controller="Medications" asp-action="Index">Leki</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-controller="Procedures" asp-action="Index">Procedury</a>
                             </li>
                         }
                         <partial name="_LoginPartial" />

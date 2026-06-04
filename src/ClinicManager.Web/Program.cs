@@ -41,6 +41,7 @@ try
     builder.Services.AddScoped<IPatientService, PatientService>();
     builder.Services.AddScoped<IVisitService, VisitService>();
     builder.Services.AddScoped<IMedicationService, MedicationService>();
+    builder.Services.AddScoped<IProcedureService, ProcedureService>();
     builder.Services.AddScoped<IUpcomingVisitsReportService, UpcomingVisitsReportService>();
     builder.Services.AddSingleton<IEmailSender, SmtpEmailSender>();
 

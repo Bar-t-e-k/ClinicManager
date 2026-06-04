@@ -29,4 +29,5 @@ public class Visit
 
     public ICollection<ClinicalNote> ClinicalNotes { get; set; } = new List<ClinicalNote>();
     public ICollection<VisitMedication> VisitMedications { get; set; } = new List<VisitMedication>();
+    public ICollection<VisitProcedure> VisitProcedures { get; set; } = new List<VisitProcedure>();
 }

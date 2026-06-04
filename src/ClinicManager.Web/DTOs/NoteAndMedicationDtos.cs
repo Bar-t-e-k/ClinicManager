@@ -18,4 +18,18 @@ public class AddMedicationToVisitDto
     [Range(1, 100, ErrorMessage = "Ilość musi być między 1 a 100.")]
     [Display(Name = "Ilość")]
     public int Quantity { get; set; } = 1;
+
+    [StringLength(300, ErrorMessage = "Dawkowanie może mieć maksymalnie 300 znaków.")]
+    [Display(Name = "Dawkowanie")]
+    public string? Dosage { get; set; }
+}
+
+public class AddProcedureToVisitDto
+{
+    [Range(1, int.MaxValue, ErrorMessage = "Wybierz procedurę.")]
+    public int ProcedureId { get; set; }
+
+    [Range(1, 100, ErrorMessage = "Ilość musi być między 1 a 100.")]
+    [Display(Name = "Ilość")]
+    public int Quantity { get; set; } = 1;
 }
