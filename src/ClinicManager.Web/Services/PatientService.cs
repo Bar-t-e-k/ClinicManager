@@ -10,35 +10,35 @@ namespace ClinicManager.Web.Services;
 public class PatientService : IPatientService
 {
     private readonly ClinicDbContext _context;
-    private readonly PatientMapper _mapper;
+    private readonly IPatientMapper _mapper;
+    private readonly IFileStorageService _fileStorageService;
 
-    public PatientService(ClinicDbContext context)
+    public PatientService(ClinicDbContext context, IPatientMapper mapper, IFileStorageService fileStorageService)
     {
         _context = context;
-        _mapper = new PatientMapper();
+        _mapper = mapper;
+        _fileStorageService = fileStorageService;
     }
 
     public async Task<IEnumerable<PatientDto>> GetAllPatientsAsync(string? searchTerm = null)
     {
-        var query = _context.Set<Patient>().Where(p => !p.IsDeleted);
+        var query = _context.Set<Patient>().AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(searchTerm))
         {
-            // Pełny PESEL (11 cyfr) → równość i Index Seek na IX_Patients_Pesel
-            if (searchTerm.Length == 11 && searchTerm.All(char.IsDigit))
-                query = query.Where(p => p.Pesel == searchTerm);
-            else
-                query = query.Where(p => p.LastName.Contains(searchTerm) || p.Pesel.Contains(searchTerm));
+            query = query.Where(p =>
+                p.FirstName.Contains(searchTerm) ||
+                p.LastName.Contains(searchTerm) ||
+                p.Pesel.Contains(searchTerm));
         }
 
-        var patients = await query.ToListAsync();
-        return patients.Select(p => _mapper.PatientToPatientDto(p));
+        return await _mapper.QueryablePatientToPatientDto(query).ToListAsync();
     }
 
     public async Task<PatientDto?> GetPatientByIdAsync(int id)
     {
         var patient = await _context.Set<Patient>()
-            .FirstOrDefaultAsync(p => p.Id == id && !p.IsDeleted);
+            .FirstOrDefaultAsync(p => p.Id == id);
 
         if (patient == null) return null;
 
@@ -61,7 +61,7 @@ public class PatientService : IPatientService
     public async Task<(bool Success, string? Error)> UpdatePatientAsync(int id, CreateUpdatePatientDto dto)
     {
         var patient = await _context.Set<Patient>()
-            .FirstOrDefaultAsync(p => p.Id == id && !p.IsDeleted);
+            .FirstOrDefaultAsync(p => p.Id == id);
 
         if (patient == null) return (false, null);
 
@@ -76,21 +76,47 @@ public class PatientService : IPatientService
 
     private async Task<bool> PeselExistsAsync(string pesel, int? excludePatientId = null)
     {
-        return await _context.Patients.AnyAsync(p =>
-            !p.IsDeleted
-            && p.Pesel == pesel
-            && (excludePatientId == null || p.Id != excludePatientId));
+        return await _context.Patients.AnyAsync(p => 
+            p.Pesel == pesel && (excludePatientId == null || p.Id != excludePatientId));
     }
 
     public async Task<bool> DeletePatientAsync(int id)
     {
-        var patient = await _context.Set<Patient>().FindAsync(id);
+        var patient = await _context.Patients
+            .Include(p => p.MedicalRecords)
+            .FirstOrDefaultAsync(p => p.Id == id);
 
-        if (patient == null || patient.IsDeleted) return false;
+        if (patient == null) return false;
+
+        var filesToDelete = new List<string>();
+
+        var avatarProp = patient.GetType().GetProperty("AvatarUrl");
+        if (avatarProp != null)
+        {
+            var avatarUrl = avatarProp.GetValue(patient) as string;
+            if (!string.IsNullOrEmpty(avatarUrl))
+            {
+                filesToDelete.Add(avatarUrl);
+            }
+        }
+
+        if (patient.MedicalRecords != null && patient.MedicalRecords.Any())
+        {
+            var documentUrls = patient.MedicalRecords
+                .Where(r => !string.IsNullOrEmpty(r.FilePath))
+                .Select(r => r.FilePath!);
+
+            filesToDelete.AddRange(documentUrls);
+        }
 
         patient.IsDeleted = true;
-
         await _context.SaveChangesAsync();
+
+        foreach (var filePath in filesToDelete)
+        {
+            _fileStorageService.DeleteFile(filePath);
+        }
+
         return true;
     }
 

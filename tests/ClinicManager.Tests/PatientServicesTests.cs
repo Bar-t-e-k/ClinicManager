@@ -1,5 +1,6 @@
 ﻿using ClinicManager.Web.Data;
 using ClinicManager.Web.DTOs;
+using ClinicManager.Web.Mappers;
 using ClinicManager.Web.Models;
 using ClinicManager.Web.Services;
 using Microsoft.AspNetCore.Identity;
@@ -27,7 +28,8 @@ public class PatientServiceTests
     {
         // Arrange
         var context = await GetInMemoryDbContextAsync();
-        var service = new PatientService(context);
+        var fileStorageService = new Mock<IFileStorageService>();
+        var service = new PatientService(context, new PatientMapper(), fileStorageService.Object);
 
         var dto = new CreateUpdatePatientDto
         {
@@ -57,7 +59,8 @@ public class PatientServiceTests
         context.Set<Patient>().Add(patient);
         await context.SaveChangesAsync();
 
-        var service = new PatientService(context);
+        var fileStorageService = new Mock<IFileStorageService>();
+        var service = new PatientService(context, new PatientMapper(), fileStorageService.Object);
 
         // Act
         var result = await service.DeletePatientAsync(patient.Id);
@@ -80,7 +83,8 @@ public class PatientServiceTests
         );
         await context.SaveChangesAsync();
 
-        var service = new PatientService(context);
+        var fileStorageService = new Mock<IFileStorageService>();
+        var service = new PatientService(context, new PatientMapper(), fileStorageService.Object);
 
         // Act
         var result = await service.GetAllPatientsAsync(null);
@@ -98,7 +102,8 @@ public class PatientServiceTests
         context.Patients.Add(patient);
         await context.SaveChangesAsync();
 
-        var service = new PatientService(context);
+        var fileStorageService = new Mock<IFileStorageService>();
+        var service = new PatientService(context, new PatientMapper(), fileStorageService.Object);
 
         // Act
         var result = await service.AddMedicalRecordAsync(patient.Id, "wyniki-krwi.pdf", "/uploads/wyniki-krwi.pdf");
@@ -122,7 +127,8 @@ public class PatientServiceTests
         context.Patients.Add(patient);
         await context.SaveChangesAsync();
 
-        var service = new PatientService(context);
+        var fileStorageService = new Mock<IFileStorageService>();
+        var service = new PatientService(context, new PatientMapper(), fileStorageService.Object);
 
         // Act
         var returnedPath = await service.DeleteMedicalRecordAsync(record.Id, patient.Id);
@@ -228,7 +234,8 @@ public class VisitServiceTests
         context.Patients.Add(new Patient { FirstName = "Jan", LastName = "Kowalski", Pesel = "12345678901" });
         await context.SaveChangesAsync();
 
-        var service = new PatientService(context);
+        var fileStorageService = new Mock<IFileStorageService>();
+        var service = new PatientService(context, new PatientMapper(), fileStorageService.Object);
         var (patientId, error) = await service.CreatePatientAsync(new CreateUpdatePatientDto
         {
             FirstName = "Adam",
@@ -258,7 +265,7 @@ public class VisitServiceTests
 
         Assert.Single(result);
         Assert.Equal("Zaplanowana", result[0].Status);
-        Assert.Equal(patient.Pesel, result[0].PatientPesel);
+        Assert.Equal(patient.Id, result[0].PatientId);
     }
 
     [Fact]

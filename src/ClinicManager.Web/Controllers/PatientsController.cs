@@ -13,12 +13,12 @@ namespace ClinicManager.Web.Controllers;
 public class PatientsController : Controller
 {
     private readonly IPatientService _patientService;
-    private readonly IWebHostEnvironment _webHostEnvironment;
+    private readonly IFileStorageService _fileStorageService;
 
-    public PatientsController(IPatientService patientService, IWebHostEnvironment webHostEnvironment)
+    public PatientsController(IPatientService patientService, IFileStorageService fileStorageService)
     {
         _patientService = patientService;
-        _webHostEnvironment = webHostEnvironment;
+        _fileStorageService = fileStorageService;
     }
 
     public async Task<IActionResult> Index(string? searchTerm)
@@ -38,13 +38,12 @@ public class PatientsController : Controller
     {
         if (!ModelState.IsValid) return View(dto);
 
-        var (patientId, error) = await _patientService.CreatePatientAsync(dto);
-        if (patientId == null)
+        if (dto.AvatarFile != null)
         {
-            ModelState.AddModelError(nameof(dto.Pesel), error ?? "Nie udało się dodać pacjenta.");
-            return View(dto);
+            dto.AvatarUrl = await _fileStorageService.SaveFileAsync(dto.AvatarFile, "uploads/patients");
         }
 
+        await _patientService.CreatePatientAsync(dto);
         TempData["Success"] = "Pacjent został dodany.";
         return RedirectToAction(nameof(Index));
     }
@@ -60,7 +59,8 @@ public class PatientsController : Controller
             FirstName = patient.FirstName,
             LastName = patient.LastName,
             Pesel = patient.Pesel,
-            InsuranceNumber = patient.InsuranceNumber
+            InsuranceNumber = patient.InsuranceNumber,
+            AvatarUrl = patient.AvatarUrl
         });
     }
 
@@ -71,14 +71,24 @@ public class PatientsController : Controller
     {
         if (!ModelState.IsValid) return View(dto);
 
-        var (success, error) = await _patientService.UpdatePatientAsync(id, dto);
-        if (!success && error == null) return NotFound();
-        if (!success)
+        var existingPatient = await _patientService.GetPatientByIdAsync(id);
+        if (existingPatient == null) return NotFound();
+
+        if (dto.AvatarFile != null)
         {
-            ModelState.AddModelError(nameof(dto.Pesel), error!);
-            return View(dto);
+            if (!string.IsNullOrEmpty(existingPatient.AvatarUrl))
+            {
+                _fileStorageService.DeleteFile(existingPatient.AvatarUrl);
+            }
+
+            dto.AvatarUrl = await _fileStorageService.SaveFileAsync(dto.AvatarFile, "uploads/patients");
+        }
+        else
+        {
+            dto.AvatarUrl = existingPatient.AvatarUrl;
         }
 
+        await _patientService.UpdatePatientAsync(id, dto);
         TempData["Success"] = "Dane pacjenta zostały zaktualizowane.";
         return RedirectToAction(nameof(Index));
     }
@@ -88,8 +98,10 @@ public class PatientsController : Controller
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(int id)
     {
-        await _patientService.DeletePatientAsync(id);
-        TempData["Success"] = "Pacjent został usunięty.";
+        var success = await _patientService.DeletePatientAsync(id);
+        if (!success) return NotFound();
+
+        TempData["Success"] = "Pacjent oraz powiązane pliki zostały pomyślnie usunięte.";
         return RedirectToAction(nameof(Index));
     }
 
@@ -120,47 +132,27 @@ public class PatientsController : Controller
             return RedirectToAction(nameof(Details), new { id = patientId });
         }
 
-        var uniqueFileName = $"{Guid.NewGuid()}{fileExtension}";
-
-        var uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "uploads");
-        if (!Directory.Exists(uploadsFolder))
-        {
-            Directory.CreateDirectory(uploadsFolder);
-        }
-
-        var absoluteFilePath = Path.Combine(uploadsFolder, uniqueFileName);
-
-        using (var fileStream = new FileStream(absoluteFilePath, FileMode.Create))
-        {
-            await document.CopyToAsync(fileStream);
-        }
-
-        var relativePath = $"/uploads/{uniqueFileName}";
-
         try
         {
-            bool isSuccess = await _patientService.AddMedicalRecordAsync(patientId, document.FileName, relativePath);
+            var relativePath = await _fileStorageService.SaveFileAsync(document, "uploads");
 
-            if (isSuccess)
+            if (relativePath != null)
             {
-                TempData["Success"] = "Dokument został wgrany.";
-            }
-            else
-            {
-                if (System.IO.File.Exists(absoluteFilePath))
+                bool isSuccess = await _patientService.AddMedicalRecordAsync(patientId, document.FileName, relativePath);
+
+                if (isSuccess)
                 {
-                    System.IO.File.Delete(absoluteFilePath);
+                    TempData["Success"] = "Dokument został wgrany.";
                 }
-                TempData["Error"] = "Nie znaleziono pacjenta. Plik nie został przypisany.";
+                else
+                {
+                    _fileStorageService.DeleteFile(relativePath);
+                    TempData["Error"] = "Nie znaleziono pacjenta. Plik nie został przypisany.";
+                }
             }
         }
         catch (Exception)
         {
-            if (System.IO.File.Exists(absoluteFilePath))
-            {
-                System.IO.File.Delete(absoluteFilePath);
-            }
-
             TempData["Error"] = "Wystąpił błąd po stronie serwera. Plik nie został wgrany.";
         }
 
@@ -176,17 +168,7 @@ public class PatientsController : Controller
 
         if (filePath != null)
         {
-            var uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "uploads");
-
-            var absolutePath = Path.GetFullPath(Path.Combine(_webHostEnvironment.WebRootPath, filePath.TrimStart('/', '\\')));
-
-            if (absolutePath.StartsWith(uploadsFolder, StringComparison.OrdinalIgnoreCase))
-            {
-                if (System.IO.File.Exists(absolutePath))
-                {
-                    System.IO.File.Delete(absolutePath);
-                }
-            }
+            _fileStorageService.DeleteFile(filePath);
 
             TempData["Success"] = "Dokument został pomyślnie usunięty.";
         }

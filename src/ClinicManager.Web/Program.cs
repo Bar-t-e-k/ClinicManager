@@ -2,6 +2,7 @@ using ClinicManager.Web.BackgroundServices;
 using ClinicManager.Web.Configuration;
 using ClinicManager.Web.Data;
 using ClinicManager.Web.Filters;
+using ClinicManager.Web.Mappers;
 using ClinicManager.Web.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -56,7 +57,15 @@ try
     builder.Services.AddRazorPages();
 
     builder.Services.AddEndpointsApiExplorer();
-    builder.Services.AddSwaggerGen();
+
+    builder.Services.AddSwaggerGen(c =>
+    {
+        var xmlFilename = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+        c.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFilename));
+    });
+
+    builder.Services.AddScoped<IFileStorageService, LocalFileStorageService>();
+    builder.Services.AddScoped<IPatientMapper, PatientMapper>();
 
     var app = builder.Build();
 

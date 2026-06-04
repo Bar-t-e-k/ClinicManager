@@ -20,18 +20,19 @@ namespace ClinicManager.Web.Filters
 
             if (isApiRequest)
             {
-                context.Result = new ObjectResult(new { error = "Wystąpił wewnętrzny błąd serwera." })
+                var problemDetails = new ProblemDetails
+                {
+                    Status = StatusCodes.Status500InternalServerError,
+                    Title = "Wystąpił wewnętrzny błąd serwera."
+                };
+
+                context.Result = new ObjectResult(problemDetails)
                 {
                     StatusCode = StatusCodes.Status500InternalServerError
                 };
-            }
-            else
-            {
-                context.Result = new ViewResult { ViewName = "Error" };
-                context.HttpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
-            }
 
-            context.ExceptionHandled = true;
+                context.ExceptionHandled = true;
+            }
         }
     }
 }

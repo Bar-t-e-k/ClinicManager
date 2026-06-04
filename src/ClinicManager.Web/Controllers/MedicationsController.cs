@@ -16,7 +16,7 @@ public class MedicationsController : Controller
     }
 
     // GET /Medications
-    [Authorize(Roles = "Admin,Lekarz")]
+    [Authorize(Roles = "Admin,Lekarz,Rejestratorka")]
     public async Task<IActionResult> Index()
     {
         var medications = await _medicationService.GetAllMedicationsAsync();
@@ -24,13 +24,13 @@ public class MedicationsController : Controller
     }
 
     // GET /Medications/Create
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Rejestratorka")]
     public IActionResult Create() => View(new CreateUpdateMedicationDto());
 
     // POST /Medications/Create
     [HttpPost]
     [ValidateAntiForgeryToken]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Rejestratorka")]
     public async Task<IActionResult> Create(CreateUpdateMedicationDto dto)
     {
         if (!ModelState.IsValid) return View(dto);
@@ -41,7 +41,7 @@ public class MedicationsController : Controller
     }
 
     // GET /Medications/Edit/5
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Rejestratorka")]
     public async Task<IActionResult> Edit(int id)
     {
         var medication = await _medicationService.GetMedicationByIdAsync(id);
@@ -60,7 +60,7 @@ public class MedicationsController : Controller
     // POST /Medications/Edit/5
     [HttpPost]
     [ValidateAntiForgeryToken]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Rejestratorka")]
     public async Task<IActionResult> Edit(int id, CreateUpdateMedicationDto dto)
     {
         if (!ModelState.IsValid) return View(dto);
@@ -75,7 +75,7 @@ public class MedicationsController : Controller
     // POST /Medications/Deactivate/5
     [HttpPost]
     [ValidateAntiForgeryToken]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Rejestratorka")]
     public async Task<IActionResult> Deactivate(int id)
     {
         await _medicationService.DeactivateMedicationAsync(id);

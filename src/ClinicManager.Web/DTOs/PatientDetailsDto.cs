@@ -11,4 +11,6 @@ public class PatientDetailsDto
     public string? InsuranceNumber { get; set; }
 
     public List<MedicalRecordDto> MedicalRecords { get; set; } = new List<MedicalRecordDto>();
+
+    public string? AvatarUrl { get; set; }
 }

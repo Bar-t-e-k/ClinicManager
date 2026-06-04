@@ -20,6 +20,12 @@ public class ClinicDbContext : IdentityDbContext<IdentityUser>
     {
         base.OnModelCreating(modelBuilder);
 
+        modelBuilder.Entity<Patient>().HasQueryFilter(p => !p.IsDeleted);
+        modelBuilder.Entity<Visit>().HasQueryFilter(v => !v.IsDeleted && !v.Patient.IsDeleted);
+        modelBuilder.Entity<MedicalRecord>().HasQueryFilter(m => !m.Patient.IsDeleted);
+        modelBuilder.Entity<ClinicalNote>().HasQueryFilter(c => !c.Visit.IsDeleted && !c.Visit.Patient.IsDeleted);
+        modelBuilder.Entity<VisitMedication>().HasQueryFilter(vm => !vm.Visit.IsDeleted && !vm.Visit.Patient.IsDeleted);
+
         // Visit -> Patient (restrict delete so we don't lose history)
         modelBuilder.Entity<Visit>()
             .HasOne(v => v.Patient)

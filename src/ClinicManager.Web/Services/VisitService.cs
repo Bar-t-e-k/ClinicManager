@@ -168,17 +168,12 @@ public class VisitService : IVisitService
         {
             Id = v.Id,
             PatientId = v.PatientId,
-            PatientFullName = $"{v.Patient.FirstName} {v.Patient.LastName}",
-            PatientPesel = v.Patient.Pesel,
-            PatientInsuranceNumber = v.Patient.InsuranceNumber,
             DoctorId = v.DoctorId,
-            DoctorName = v.Doctor.Email ?? v.Doctor.UserName ?? v.DoctorId,
             ScheduledDate = v.ScheduledDate,
             Status = GetStatusDisplay(v.Status),
-            Description = v.Description,
             TotalCost = v.TotalCost,
             MedicationCount = v.VisitMedications.Count
-        }).ToList();
+        }).ToList(); ;
     }
 
     public async Task<bool> AddClinicalNoteAsync(int visitId, CreateClinicalNoteDto dto)
