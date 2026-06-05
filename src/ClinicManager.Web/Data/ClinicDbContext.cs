@@ -15,6 +15,8 @@ public class ClinicDbContext : IdentityDbContext<IdentityUser>
     public DbSet<Medication> Medications { get; set; }
     public DbSet<VisitMedication> VisitMedications { get; set; }
     public DbSet<MedicalRecord> MedicalRecords { get; set; }
+    public DbSet<Procedure> Procedures { get; set; }
+    public DbSet<VisitProcedure> VisitProcedures { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -25,6 +27,7 @@ public class ClinicDbContext : IdentityDbContext<IdentityUser>
         modelBuilder.Entity<MedicalRecord>().HasQueryFilter(m => !m.Patient.IsDeleted);
         modelBuilder.Entity<ClinicalNote>().HasQueryFilter(c => !c.Visit.IsDeleted && !c.Visit.Patient.IsDeleted);
         modelBuilder.Entity<VisitMedication>().HasQueryFilter(vm => !vm.Visit.IsDeleted && !vm.Visit.Patient.IsDeleted);
+        modelBuilder.Entity<VisitProcedure>().HasQueryFilter(vp => !vp.Visit.IsDeleted && !vp.Visit.Patient.IsDeleted);
 
         // Visit -> Patient (restrict delete so we don't lose history)
         modelBuilder.Entity<Visit>()
@@ -60,6 +63,19 @@ public class ClinicDbContext : IdentityDbContext<IdentityUser>
             .HasForeignKey(vm => vm.MedicationId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        // VisitProcedure joins (US#12)
+        modelBuilder.Entity<VisitProcedure>()
+            .HasOne(vp => vp.Visit)
+            .WithMany(v => v.VisitProcedures)
+            .HasForeignKey(vp => vp.VisitId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<VisitProcedure>()
+            .HasOne(vp => vp.Procedure)
+            .WithMany(p => p.VisitProcedures)
+            .HasForeignKey(vp => vp.ProcedureId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         // MedicalRecord -> Patient
         modelBuilder.Entity<MedicalRecord>()
             .HasOne(m => m.Patient)
@@ -78,6 +94,14 @@ public class ClinicDbContext : IdentityDbContext<IdentityUser>
 
         modelBuilder.Entity<VisitMedication>()
             .Property(vm => vm.UnitPrice)
+            .HasColumnType("decimal(10,2)");
+
+        modelBuilder.Entity<Procedure>()
+            .Property(p => p.Cost)
+            .HasColumnType("decimal(10,2)");
+
+        modelBuilder.Entity<VisitProcedure>()
+            .Property(vp => vp.UnitCost)
             .HasColumnType("decimal(10,2)");
 
         // US#9: wyszukiwanie po PESEL (równość / unikalność aktywnych pacjentów)

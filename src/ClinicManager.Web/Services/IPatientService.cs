@@ -19,4 +19,10 @@ public interface IPatientService
     Task<bool> AddMedicalRecordAsync(int patientId, string fileName, string filePath);
 
     Task<string?> DeleteMedicalRecordAsync(int recordId, int patientId);
+
+    /// <summary>Powiązuje konto użytkownika z istniejącym pacjentem o danym PESEL lub tworzy nowy rekord pacjenta.</summary>
+    Task<(bool Success, string? Error)> LinkOrCreatePatientForUserAsync(string userId, string pesel, string firstName, string lastName);
+
+    /// <summary>Zwraca Id pacjenta powiązanego z danym kontem użytkownika (lub null, jeśli brak powiązania).</summary>
+    Task<int?> GetPatientIdByUserIdAsync(string userId);
 }

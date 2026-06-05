@@ -21,6 +21,7 @@ public class PatientsController : Controller
         _fileStorageService = fileStorageService;
     }
 
+    [Authorize(Roles = "Admin,Rejestratorka,Lekarz")]
     public async Task<IActionResult> Index(string? searchTerm)
     {
         ViewData["CurrentFilter"] = searchTerm;
@@ -105,6 +106,7 @@ public class PatientsController : Controller
         return RedirectToAction(nameof(Index));
     }
 
+    [Authorize(Roles = "Admin,Rejestratorka,Lekarz")]
     public async Task<IActionResult> Details(int id)
     {
         var patient = await _patientService.GetPatientDetailsAsync(id);

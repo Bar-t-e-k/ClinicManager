@@ -80,7 +80,7 @@
     </div>
 </div>
 
-<!-- ═══════════════ NOTATKI KLINICZNE ═══════════════ -->
+<!-- ═══════════════ NOTATKI KLINICZNE (tylko personel medyczny) ═══════════════ -->
 @if (isDoctor)
 {
     <div class="card mb-4">
@@ -128,36 +128,44 @@
 
         </div>
     </div>
+}
 
-    <!-- ═══════════════ LEKI ═══════════════ -->
-    <div class="card mb-4">
-        <div class="card-header bg-light fw-semibold">💊 Przepisane leki</div>
-        <div class="card-body">
+<!-- ═══════════════ LEKI (podgląd dla pacjenta, edycja dla personelu) ═══════════════ -->
+<div class="card mb-4">
+    <div class="card-header bg-light fw-semibold">💊 Przepisane leki</div>
+    <div class="card-body">
 
-            @if (!Model.Medications.Any())
-            {
-                <p class="text-muted mb-3">Nie przepisano żadnych leków.</p>
-            }
-            else
-            {
-                <table class="table table-sm table-bordered mb-3">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Lek</th>
-                            <th class="text-end">Ilość</th>
-                            <th class="text-end">Cena jedn.</th>
-                            <th class="text-end">Razem</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var med in Model.Medications)
+        @if (!Model.Medications.Any())
+        {
+            <p class="text-muted mb-3">Nie przepisano żadnych leków.</p>
+        }
+        else
+        {
+            <table class="table table-sm table-bordered mb-3">
+                <thead class="table-light">
+                    <tr>
+                        <th>Lek</th>
+                        <th>Dawkowanie</th>
+                        <th class="text-end">Ilość</th>
+                        <th class="text-end">Cena jedn.</th>
+                        <th class="text-end">Razem</th>
+                        @if (isDoctor)
                         {
-                            <tr>
-                                <td>@med.MedicationName</td>
-                                <td class="text-end">@med.Quantity</td>
-                                <td class="text-end">@med.UnitPrice.ToString("C")</td>
-                                <td class="text-end fw-semibold">@med.TotalPrice.ToString("C")</td>
+                            <th></th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var med in Model.Medications)
+                    {
+                        <tr>
+                            <td>@med.MedicationName</td>
+                            <td>@(string.IsNullOrWhiteSpace(med.Dosage) ? "—" : med.Dosage)</td>
+                            <td class="text-end">@med.Quantity</td>
+                            <td class="text-end">@med.UnitPrice.ToString("C")</td>
+                            <td class="text-end fw-semibold">@med.TotalPrice.ToString("C")</td>
+                            @if (isDoctor)
+                            {
                                 <td class="text-center">
                                     <form asp-action="RemoveMedication" method="post" class="d-inline"
                                           onsubmit="return confirm('Usunąć ten lek z wizyty?');">
@@ -167,24 +175,117 @@
                                         <button type="submit" class="btn btn-sm btn-outline-danger">Usuń</button>
                                     </form>
                                 </td>
-                            </tr>
-                        }
-                        <tr class="table-secondary">
-                            <td colspan="3" class="text-end fw-bold">Łączny koszt:</td>
-                            <td class="text-end fw-bold">@Model.TotalCost.ToString("C")</td>
-                            <td></td>
+                            }
                         </tr>
-                    </tbody>
-                </table>
-            }
+                    }
+                    <tr class="table-secondary">
+                        <td colspan="4" class="text-end fw-bold">Koszt leków:</td>
+                        <td class="text-end fw-bold">@Model.Medications.Sum(m => m.TotalPrice).ToString("C")</td>
+                        @if (isDoctor)
+                        {
+                            <td></td>
+                        }
+                    </tr>
+                </tbody>
+            </table>
+        }
 
+        @if (isDoctor)
+        {
             <form asp-action="AddMedication" method="post" class="row g-2 align-items-end">
                 <input type="hidden" name="visitId" value="@Model.Id" />
                 @Html.AntiForgeryToken()
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <label class="form-label fw-semibold">Lek</label>
                     <select name="MedicationId" asp-items="@ViewBag.MedicationSelectList" class="form-select" required>
                         <option value="">— wybierz lek —</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Dawkowanie</label>
+                    <input type="text" name="Dosage" maxlength="300" class="form-control"
+                           placeholder="np. 1 tabletka 2x dziennie po posiłku" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold">Ilość</label>
+                    <input type="number" name="Quantity" value="1" min="1" max="100" class="form-control" />
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-success w-100">Przepisz lek</button>
+                </div>
+            </form>
+        }
+
+    </div>
+</div>
+
+<!-- ═══════════════ PROCEDURY MEDYCZNE (podgląd dla pacjenta, edycja dla personelu) ═══════════════ -->
+<div class="card mb-4">
+    <div class="card-header bg-light fw-semibold">🩺 Wykonane procedury medyczne</div>
+    <div class="card-body">
+
+        @if (!Model.Procedures.Any())
+        {
+            <p class="text-muted mb-3">Nie wykonano żadnych procedur.</p>
+        }
+        else
+        {
+            <table class="table table-sm table-bordered mb-3">
+                <thead class="table-light">
+                    <tr>
+                        <th>Procedura</th>
+                        <th class="text-end">Ilość</th>
+                        <th class="text-end">Koszt jedn.</th>
+                        <th class="text-end">Razem</th>
+                        @if (isDoctor)
+                        {
+                            <th></th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var proc in Model.Procedures)
+                    {
+                        <tr>
+                            <td>@proc.ProcedureDescription</td>
+                            <td class="text-end">@proc.Quantity</td>
+                            <td class="text-end">@proc.UnitCost.ToString("C")</td>
+                            <td class="text-end fw-semibold">@proc.TotalCost.ToString("C")</td>
+                            @if (isDoctor)
+                            {
+                                <td class="text-center">
+                                    <form asp-action="RemoveProcedure" method="post" class="d-inline"
+                                          onsubmit="return confirm('Usunąć tę procedurę z wizyty?');">
+                                        <input type="hidden" name="visitProcedureId" value="@proc.Id" />
+                                        <input type="hidden" name="visitId" value="@Model.Id" />
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">Usuń</button>
+                                    </form>
+                                </td>
+                            }
+                        </tr>
+                    }
+                    <tr class="table-secondary">
+                        <td colspan="3" class="text-end fw-bold">Koszt procedur:</td>
+                        <td class="text-end fw-bold">@Model.Procedures.Sum(p => p.TotalCost).ToString("C")</td>
+                        @if (isDoctor)
+                        {
+                            <td></td>
+                        }
+                    </tr>
+                </tbody>
+            </table>
+        }
+
+        @if (isDoctor)
+        {
+            <form asp-action="AddProcedure" method="post" class="row g-2 align-items-end">
+                <input type="hidden" name="visitId" value="@Model.Id" />
+                @Html.AntiForgeryToken()
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Procedura</label>
+                    <select name="ProcedureId" asp-items="@ViewBag.ProcedureSelectList" class="form-select" required>
+                        <option value="">— wybierz procedurę —</option>
                     </select>
                 </div>
                 <div class="col-md-3">
@@ -192,10 +293,15 @@
                     <input type="number" name="Quantity" value="1" min="1" max="100" class="form-control" />
                 </div>
                 <div class="col-md-3">
-                    <button type="submit" class="btn btn-success w-100">Przepisz lek</button>
+                    <button type="submit" class="btn btn-success w-100">Dodaj procedurę</button>
                 </div>
             </form>
+        }
 
-        </div>
     </div>
-}
+</div>
+
+<div class="alert alert-info">
+    <span class="fw-bold">Koszt całkowity wizyty (leki + procedury):</span>
+    <span class="fw-bold">@Model.TotalCost.ToString("C")</span>
+</div>

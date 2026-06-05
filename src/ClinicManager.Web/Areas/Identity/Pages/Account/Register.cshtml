@@ -1,0 +1,61 @@
+@page
+@model RegisterModel
+@{
+    ViewData["Title"] = "Rejestracja pacjenta";
+}
+
+<h2 class="mb-4">@ViewData["Title"]</h2>
+
+<div class="row">
+    <div class="col-md-5">
+        <form id="registerForm" asp-route-returnUrl="@Model.ReturnUrl" method="post">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+            <p class="text-muted small">
+                Załóż konto pacjenta, aby przeglądać swoje wizyty. Podaj numer PESEL — posłuży on do
+                powiązania konta z Twoimi danymi w przychodni.
+            </p>
+
+            <div class="mb-3">
+                <label asp-for="Input.FirstName" class="form-label fw-semibold"></label>
+                <input asp-for="Input.FirstName" class="form-control" />
+                <span asp-validation-for="Input.FirstName" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Input.LastName" class="form-label fw-semibold"></label>
+                <input asp-for="Input.LastName" class="form-control" />
+                <span asp-validation-for="Input.LastName" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Input.Pesel" class="form-label fw-semibold"></label>
+                <input asp-for="Input.Pesel" class="form-control" maxlength="11" inputmode="numeric" />
+                <span asp-validation-for="Input.Pesel" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Input.Email" class="form-label fw-semibold"></label>
+                <input asp-for="Input.Email" class="form-control" autocomplete="username" />
+                <span asp-validation-for="Input.Email" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Input.Password" class="form-label fw-semibold"></label>
+                <input asp-for="Input.Password" class="form-control" autocomplete="new-password" />
+                <span asp-validation-for="Input.Password" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Input.ConfirmPassword" class="form-label fw-semibold"></label>
+                <input asp-for="Input.ConfirmPassword" class="form-control" autocomplete="new-password" />
+                <span asp-validation-for="Input.ConfirmPassword" class="text-danger small"></span>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100">Zarejestruj się</button>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

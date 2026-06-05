@@ -21,6 +21,9 @@ namespace ClinicManager.Web.Models
         [StringLength(50)]
         public string? InsuranceNumber { get; set; }
 
+        /// <summary>Powiązanie rekordu pacjenta z kontem użytkownika (Identity). Pacjent loguje się i widzi tylko swoje wizyty.</summary>
+        public string? UserId { get; set; }
+
         public bool IsDeleted { get; set; } = false;
 
         public ICollection<MedicalRecord> MedicalRecords { get; set; } = new List<MedicalRecord>();

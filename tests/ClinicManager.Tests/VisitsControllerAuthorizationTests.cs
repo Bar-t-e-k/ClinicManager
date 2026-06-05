@@ -16,6 +16,7 @@ public class VisitsControllerAuthorizationTests
     private readonly Mock<IVisitService> _visitService = new();
     private readonly Mock<IPatientService> _patientService = new();
     private readonly Mock<IMedicationService> _medicationService = new();
+    private readonly Mock<IProcedureService> _procedureService = new();
     private readonly Mock<UserManager<IdentityUser>> _userManager;
 
     private const string OwnDoctorId = "doctor-own";
@@ -110,6 +111,7 @@ public class VisitsControllerAuthorizationTests
             _visitService.Object,
             _patientService.Object,
             _medicationService.Object,
+            _procedureService.Object,
             _userManager.Object)
         {
             ControllerContext = new ControllerContext

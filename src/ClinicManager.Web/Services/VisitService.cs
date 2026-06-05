@@ -31,6 +31,18 @@ public class VisitService : IVisitService
         return visits.Select(v => MapToDto(v));
     }
 
+    public async Task<IEnumerable<VisitDto>> GetVisitsByPatientAsync(int patientId)
+    {
+        var visits = await _context.Visits
+            .Include(v => v.Patient)
+            .Include(v => v.Doctor)
+            .Where(v => !v.IsDeleted && v.PatientId == patientId)
+            .OrderBy(v => v.ScheduledDate)
+            .ToListAsync();
+
+        return visits.Select(MapToDto);
+    }
+
     public async Task<VisitDetailsDto?> GetVisitDetailsAsync(int id)
     {
         var visit = await _context.Visits
@@ -38,6 +50,7 @@ public class VisitService : IVisitService
             .Include(v => v.Doctor)
             .Include(v => v.ClinicalNotes)
             .Include(v => v.VisitMedications).ThenInclude(vm => vm.Medication)
+            .Include(v => v.VisitProcedures).ThenInclude(vp => vp.Procedure)
             .FirstOrDefaultAsync(v => v.Id == id && !v.IsDeleted);
 
         if (visit == null) return null;
@@ -68,7 +81,17 @@ public class VisitService : IVisitService
                     MedicationId = vm.MedicationId,
                     MedicationName = vm.Medication.Name,
                     Quantity = vm.Quantity,
-                    UnitPrice = vm.UnitPrice
+                    UnitPrice = vm.UnitPrice,
+                    Dosage = vm.Dosage
+                }).ToList(),
+            Procedures = visit.VisitProcedures
+                .Select(vp => new VisitProcedureDto
+                {
+                    Id = vp.Id,
+                    ProcedureId = vp.ProcedureId,
+                    ProcedureDescription = vp.Procedure.Description,
+                    Quantity = vp.Quantity,
+                    UnitCost = vp.UnitCost
                 }).ToList()
         };
     }
@@ -207,6 +230,7 @@ public class VisitService : IVisitService
     {
         var visit = await _context.Visits
             .Include(v => v.VisitMedications)
+            .Include(v => v.VisitProcedures)
             .FirstOrDefaultAsync(v => v.Id == visitId && !v.IsDeleted);
 
         if (visit == null) return (false, "Wizyta nie istnieje.");
@@ -219,6 +243,8 @@ public class VisitService : IVisitService
         if (existing != null)
         {
             existing.Quantity += dto.Quantity;
+            if (!string.IsNullOrWhiteSpace(dto.Dosage))
+                existing.Dosage = dto.Dosage;
         }
         else
         {
@@ -227,7 +253,8 @@ public class VisitService : IVisitService
                 VisitId = visitId,
                 MedicationId = dto.MedicationId,
                 Quantity = dto.Quantity,
-                UnitPrice = medication.Price
+                UnitPrice = medication.Price,
+                Dosage = dto.Dosage
             });
         }
 
@@ -240,6 +267,7 @@ public class VisitService : IVisitService
     {
         var vm = await _context.VisitMedications
             .Include(x => x.Visit).ThenInclude(v => v.VisitMedications)
+            .Include(x => x.Visit).ThenInclude(v => v.VisitProcedures)
             .FirstOrDefaultAsync(x => x.Id == visitMedicationId);
 
         if (vm == null) return false;
@@ -253,9 +281,63 @@ public class VisitService : IVisitService
         return true;
     }
 
+    public async Task<(bool Success, string? Error)> AddProcedureAsync(int visitId, AddProcedureToVisitDto dto)
+    {
+        var visit = await _context.Visits
+            .Include(v => v.VisitMedications)
+            .Include(v => v.VisitProcedures)
+            .FirstOrDefaultAsync(v => v.Id == visitId && !v.IsDeleted);
+
+        if (visit == null) return (false, "Wizyta nie istnieje.");
+
+        var procedure = await _context.Procedures.FindAsync(dto.ProcedureId);
+        if (procedure == null || !procedure.IsActive)
+            return (false, "Procedura nie istnieje lub jest nieaktywna.");
+
+        var existing = visit.VisitProcedures.FirstOrDefault(vp => vp.ProcedureId == dto.ProcedureId);
+        if (existing != null)
+        {
+            existing.Quantity += dto.Quantity;
+        }
+        else
+        {
+            visit.VisitProcedures.Add(new VisitProcedure
+            {
+                VisitId = visitId,
+                ProcedureId = dto.ProcedureId,
+                Quantity = dto.Quantity,
+                UnitCost = procedure.Cost
+            });
+        }
+
+        RecalculateTotalCost(visit);
+        await _context.SaveChangesAsync();
+        return (true, null);
+    }
+
+    public async Task<bool> RemoveProcedureAsync(int visitProcedureId)
+    {
+        var vp = await _context.VisitProcedures
+            .Include(x => x.Visit).ThenInclude(v => v.VisitMedications)
+            .Include(x => x.Visit).ThenInclude(v => v.VisitProcedures)
+            .FirstOrDefaultAsync(x => x.Id == visitProcedureId);
+
+        if (vp == null) return false;
+
+        var visit = vp.Visit;
+        _context.VisitProcedures.Remove(vp);
+        visit.VisitProcedures.Remove(vp);
+
+        RecalculateTotalCost(visit);
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
     private static void RecalculateTotalCost(Visit visit)
     {
-        visit.TotalCost = visit.VisitMedications.Sum(vm => vm.UnitPrice * vm.Quantity);
+        var medicationsCost = visit.VisitMedications.Sum(vm => vm.UnitPrice * vm.Quantity);
+        var proceduresCost = visit.VisitProcedures.Sum(vp => vp.UnitCost * vp.Quantity);
+        visit.TotalCost = medicationsCost + proceduresCost;
     }
 
     private static VisitDto MapToDto(Visit v) => new()
