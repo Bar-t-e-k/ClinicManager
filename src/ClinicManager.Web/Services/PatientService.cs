@@ -128,7 +128,28 @@ public class PatientService : IPatientService
 
         if (patient == null) return null;
 
-        return _mapper.PatientToPatientDetailsDto(patient);
+        var dto = _mapper.PatientToPatientDetailsDto(patient);
+
+        var visits = await _context.Set<Visit>()
+            .Include(v => v.Doctor)
+            .Where(v => v.PatientId == id && !v.IsDeleted)
+            .OrderByDescending(v => v.ScheduledDate)
+            .ToListAsync();
+
+        dto.Visits = visits.Select(v => new VisitDto
+        {
+            Id = v.Id,
+            PatientId = v.PatientId,
+            PatientFullName = $"{patient.FirstName} {patient.LastName}",
+            DoctorId = v.DoctorId,
+            DoctorName = v.Doctor.UserName,
+            ScheduledDate = v.ScheduledDate,
+            Status = v.Status.ToString(),
+            Description = v.Description,
+            TotalCost = v.TotalCost
+        }).ToList();
+
+        return dto;
     }
 
     public async Task<bool> AddMedicalRecordAsync(int patientId, string fileName, string filePath)

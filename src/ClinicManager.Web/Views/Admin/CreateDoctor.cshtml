@@ -1,0 +1,36 @@
+﻿@{
+	ViewData["Title"] = "Utwórz konto lekarza";
+}
+
+<div class="container mt-5">
+	<div class="row justify-content-center">
+		<div class="col-md-5">
+			<div class="card shadow">
+				<div class="card-header bg-primary text-white">
+					<h4 class="mb-0"><i class="bi bi-person-plus-fill"></i> Zarejestruj nowego lekarza</h4>
+				</div>
+				<div class="card-body p-4">
+					<form method="post" asp-controller="Admin" asp-action="CreateDoctor">
+						<div asp-validation-summary="All" class="text-danger mb-3"></div>
+                        
+						<div class="mb-3">
+							<label class="form-label fw-bold">Adres Email (Login)</label>
+							<input type="email" name="email" class="form-control" placeholder="np. j.kowalski@clinic.com" required />
+						</div>
+                        
+						<div class="mb-4">
+							<label class="form-label fw-bold">Hasło początkowe</label>
+							<input type="password" name="password" class="form-control" placeholder="Wpisz hasło..." required minlength="4" />
+							<div class="form-text">Lekarz będzie mógł później zmienić to hasło w ustawieniach konta.</div>
+						</div>
+                        
+						<div class="d-grid gap-2">
+							<button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Utwórz konto</button>
+							<a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary">Anuluj i wróć</a>
+						</div>
+					</form>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>

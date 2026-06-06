@@ -1,6 +1,55 @@
 ﻿@{
-    ViewData["Title"] = "Privacy Policy";
+    ViewData["Title"] = "Polityka Prywatności i RODO";
 }
-<h1>@ViewData["Title"]</h1>
 
-<p>Use this page to detail your site's privacy policy.</p>
+<div class="container mt-4">
+    <h1 class="mb-4 text-primary">@ViewData["Title"]</h1>
+
+    @if (User.IsInRole("Admin"))
+    {
+        <div class="alert alert-dark border-dark">
+            <h4 class="alert-heading"><i class="bi bi-shield-lock"></i> Panel Inspektora Ochrony Danych (Admin)</h4>
+            <p>Jako administrator systemu masz pełny dostęp do danych wrażliwych pacjentów. Pamiętaj, że wszystkie Twoje akcje w systemie mogą być logowane (Audit Logs).</p>
+            <hr>
+            <p class="mb-0">Upewnij się, że nie udostępniasz haseł personelu osobom trzecim oraz regularnie wykonujesz kopie zapasowe (Backup) bazy danych.</p>
+        </div>
+    }
+    else if (User.IsInRole("Lekarz"))
+    {
+        <div class="alert alert-primary border-primary">
+            <h4 class="alert-heading"><i class="bi bi-heart-pulse"></i> Ochrona Danych Medycznych (Lekarz)</h4>
+            <p>Przetwarzasz elektroniczną dokumentację medyczną (EDM). Zgodnie z ustawą o prawach pacjenta i Rzeczniku Praw Pacjenta jesteś zobowiązany do zachowania ścisłej tajemnicy lekarskiej.</p>
+            <hr>
+            <p class="mb-0">Pamiętaj o wylogowywaniu się z systemu (lub blokowaniu komputera), gdy odchodzisz od biurka w gabinecie!</p>
+        </div>
+    }
+    else if (User.IsInRole("Rejestratorka"))
+    {
+        <div class="alert alert-warning border-warning">
+            <h4 class="alert-heading"><i class="bi bi-person-badge"></i> Procedury dla Rejestracji</h4>
+            <p>Posiadasz dostęp do danych osobowych (imię, nazwisko, PESEL, adres). Twoim obowiązkiem jest dbanie o prawidłową weryfikację tożsamości pacjentów przed wizytą.</p>
+            <hr>
+            <p class="mb-0">Nie udzielaj informacji o wizytach pacjentów osobom nieupoważnionym przez telefon.</p>
+        </div>
+    }
+    else if (User.Identity.IsAuthenticated)
+    {
+        <div class="alert alert-info border-info">
+            <h4 class="alert-heading"><i class="bi bi-file-person"></i> Twoje dane są u nas bezpieczne (Pacjent)</h4>
+            <p>Twoje dane medyczne oraz osobowe są szyfrowane i przetwarzane wyłącznie w celach realizacji świadczeń zdrowotnych przez personel ClinicManager.</p>
+            <ul>
+                <li>Masz prawo wglądu do swojej pełnej dokumentacji medycznej.</li>
+                <li>Masz prawo zażądać sprostowania błędnych danych.</li>
+                <li>Przetwarzamy dane zgodnie z ogólnym rozporządzeniem o ochronie danych (RODO).</li>
+            </ul>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-secondary">
+            <h4 class="alert-heading">Informacje publiczne</h4>
+            <p>Serwis ClinicManager używa niezbędnych plików cookie (sesyjnych) do zapewnienia prawidłowego logowania i działania aplikacji.</p>
+            <p>Zaloguj się do systemu, aby zobaczyć szczegóły polityki przypisane do Twojego konta.</p>
+        </div>
+    }
+</div>

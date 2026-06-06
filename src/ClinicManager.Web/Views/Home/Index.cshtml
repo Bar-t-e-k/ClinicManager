@@ -1,8 +1,120 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+﻿@using System.Security.Claims
+@using Microsoft.AspNetCore.Identity
+@using ClinicManager.Web.Data
+@inject UserManager<IdentityUser> UserManager
+@inject ClinicDbContext Context
+
+@{
+    ViewData["Title"] = "Strona główna";
+    var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="text-center mb-5 mt-4">
+    <h1 class="display-4 fw-bold text-primary">ClinicManager</h1>
+    <p class="lead text-muted">System zarządzania Twoją placówką medyczną.</p>
+</div>
+
+<div class="container">
+	<div class="row justify-content-center">
+
+		@if (User.IsInRole("Lekarz"))
+		{
+			<div class="col-md-6 mb-4">
+				<div class="card border-primary shadow h-100 rounded-3">
+					<div class="card-header bg-primary text-white">
+						<h5 class="mb-0"><i class="bi bi-graph-up"></i> Twój pulpit - Raporty</h5>
+					</div>
+					<div class="card-body d-flex flex-column justify-content-center align-items-center text-center p-4">
+						<i class="bi bi-file-earmark-medical text-primary mb-3" style="font-size: 3.5rem;"></i>
+						<h5 class="card-title fw-bold">Podsumowanie kosztów świadczeń</h5>
+						<p class="card-text text-muted mb-4">Pobierz zestawienie kosztów procedur i leków z Twoich wizyt za bieżący miesiąc. Raport jest generowany na bieżąco.</p>
+						<a asp-controller="Reports"
+						   asp-action="DownloadDoctorMonthlyReport"
+						   asp-route-doctorId="@currentUserId"
+						   asp-route-year="@DateTime.Now.Year"
+						   asp-route-month="@DateTime.Now.Month"
+						   class="btn btn-primary btn-lg w-100 shadow-sm">
+							<i class="bi bi-download me-2"></i> Pobierz raport (Bieżący miesiąc)
+						</a>
+					</div>
+				</div>
+			</div>
+		}
+
+		@if (User.IsInRole("Admin"))
+		{
+			// Magia list rozwijanych - zaciągamy dane od razu w widoku!
+			var doctors = await UserManager.GetUsersInRoleAsync("Lekarz");
+			var patients = Context.Patients.Where(p => !p.IsDeleted).OrderBy(p => p.LastName).ToList();
+
+			<div class="col-md-8 mb-4">
+				<div class="card border-dark shadow h-100 rounded-3">
+					<div class="card-header bg-dark text-white">
+						<h5 class="mb-0"><i class="bi bi-shield-lock"></i> Panel Administratora - Raporty</h5>
+					</div>
+					<div class="card-body p-4">
+
+						<h6 class="text-dark fw-bold mb-3"><i class="bi bi-person-badge text-primary"></i> Raport dla wybranego Lekarza</h6>
+						<form asp-controller="Reports" asp-action="DownloadDoctorMonthlyReport" method="get" class="row g-3 align-items-end mb-4 bg-light p-3 rounded">
+							<div class="col-md-6">
+								<label class="form-label small text-muted fw-bold">Wybierz lekarza z bazy:</label>
+								<select name="doctorId" class="form-select border-secondary" required>
+									<option value="">-- Wybierz lekarza z listy --</option>
+									@foreach (var doc in doctors)
+									{
+										<option value="@doc.Id">@doc.UserName</option>
+									}
+								</select>
+							</div>
+							<div class="col-md-2">
+								<label class="form-label small text-muted fw-bold">Rok:</label>
+								<input type="number" name="year" class="form-control border-secondary" value="@DateTime.Now.Year" required />
+							</div>
+							<div class="col-md-2">
+								<label class="form-label small text-muted fw-bold">Miesiąc:</label>
+								<input type="number" name="month" class="form-control border-secondary" value="@DateTime.Now.Month" min="1" max="12" required />
+							</div>
+							<div class="col-md-2">
+								<button type="submit" class="btn btn-dark w-100 shadow-sm">Pobierz</button>
+							</div>
+						</form>
+
+						<hr class="my-4" />
+
+						<h6 class="text-dark fw-bold mb-3"><i class="bi bi-person text-success"></i> Raport dla wybranego Pacjenta</h6>
+						<form asp-controller="Reports" asp-action="DownloadPatientMonthlyReport" method="get" class="row g-3 align-items-end bg-light p-3 rounded">
+							<div class="col-md-6">
+								<label class="form-label small text-muted fw-bold">Wybierz pacjenta z bazy:</label>
+								<select name="patientId" class="form-select border-secondary" required>
+									<option value="">-- Wybierz pacjenta z listy --</option>
+									@foreach (var pat in patients)
+									{
+										<option value="@pat.Id">@pat.LastName @pat.FirstName (PESEL: @pat.Pesel)</option>
+									}
+								</select>
+							</div>
+							<div class="col-md-2">
+								<label class="form-label small text-muted fw-bold">Rok:</label>
+								<input type="number" name="year" class="form-control border-secondary" value="@DateTime.Now.Year" required />
+							</div>
+							<div class="col-md-2">
+								<label class="form-label small text-muted fw-bold">Miesiąc:</label>
+								<input type="number" name="month" class="form-control border-secondary" value="@DateTime.Now.Month" min="1" max="12" required />
+							</div>
+							<div class="col-md-2">
+								<button type="submit" class="btn btn-dark w-100 shadow-sm">Pobierz</button>
+							</div>
+						</form>
+						
+						<hr class="my-4" />
+						<h6 class="text-dark fw-bold mb-3"><i class="bi bi-gear text-secondary"></i> Zarządzanie Personelem</h6>
+						<a asp-controller="Admin" asp-action="CreateDoctor" class="btn btn-primary shadow-sm">
+							<i class="bi bi-person-plus-fill me-2"></i> Utwórz nowe konto lekarza
+						</a>
+
+					</div>
+				</div>
+			</div>
+		}
+	</div>
 </div>
