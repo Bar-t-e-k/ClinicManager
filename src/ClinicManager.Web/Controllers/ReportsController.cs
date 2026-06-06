@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace ClinicManager.Web.Controllers;
 
@@ -26,10 +27,11 @@ public class ReportsController : Controller
     [HttpGet("DownloadPatientMonthlyReport")]
     public async Task<IActionResult> DownloadPatientMonthlyReport(int patientId, int year, int month)
     {
-        var currentUserId = _userManager.GetUserId(User);
-        var isStaff = User.IsInRole("Lekarz") || User.IsInRole("Admin") || User.IsInRole("Recepcjonistka");
+        var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var isStaff = User.IsInRole("Lekarz") || User.IsInRole("Admin") || User.IsInRole("Rejestratorka");
 
-        var patient = await _context.Patients.FindAsync(patientId);
+        var patient = await _context.Patients
+            .FirstOrDefaultAsync(p => p.Id == patientId && !p.IsDeleted);
         if (patient == null) return NotFound("Nie znaleziono pacjenta");
 
         if (!isStaff && patient.UserId != currentUserId)
@@ -53,7 +55,7 @@ public class ReportsController : Controller
     [HttpGet("DownloadDoctorMonthlyReport")]
     public async Task<IActionResult> DownloadDoctorMonthlyReport(string doctorId, int year, int month)
     {
-        var currentUserId = _userManager.GetUserId(User);
+        var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
         if (currentUserId != doctorId && !User.IsInRole("Admin"))
         {
@@ -71,7 +73,7 @@ public class ReportsController : Controller
     [HttpGet("DownloadMyPatientReport")]
     public async Task<IActionResult> DownloadMyPatientReport(int year, int month)
     {
-        var currentUserId = _userManager.GetUserId(User);
+        var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
         if (currentUserId == null)
         {

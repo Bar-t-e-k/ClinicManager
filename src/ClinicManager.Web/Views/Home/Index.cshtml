@@ -43,7 +43,6 @@
 
 		@if (User.IsInRole("Admin"))
 		{
-			// Magia list rozwijanych - zaciągamy dane od razu w widoku!
 			var doctors = await UserManager.GetUsersInRoleAsync("Lekarz");
 			var patients = Context.Patients.Where(p => !p.IsDeleted).OrderBy(p => p.LastName).ToList();
 

@@ -144,7 +144,7 @@ public class PatientService : IPatientService
             DoctorId = v.DoctorId,
             DoctorName = v.Doctor.UserName,
             ScheduledDate = v.ScheduledDate,
-            Status = v.Status.ToString(),
+            Status = VisitService.GetStatusDisplay(v.Status),
             Description = v.Description,
             TotalCost = v.TotalCost
         }).ToList();

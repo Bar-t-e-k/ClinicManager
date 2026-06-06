@@ -18,7 +18,7 @@ public class ReportService : IReportService
 
     public async Task<byte[]> GeneratePatientMonthlyCostReportAsync(int patientId, int year, int month)
     {
-        var patient = await _context.Patients.FirstOrDefaultAsync(p => p.Id == patientId);
+        var patient = await _context.Patients.FirstOrDefaultAsync(p => p.Id == patientId && !p.IsDeleted);
         if (patient == null) throw new ArgumentException("Nie znaleziono pacjenta");
 
         var personName = $"{patient.FirstName} {patient.LastName} (PESEL: {patient.Pesel})";

@@ -21,6 +21,7 @@ public class AdminController : Controller
     }
 
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> CreateDoctor(string email, string password)
     {
         if (ModelState.IsValid)
