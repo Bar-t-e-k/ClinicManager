@@ -67,6 +67,7 @@ try
 
     builder.Services.AddScoped<IFileStorageService, LocalFileStorageService>();
     builder.Services.AddScoped<IPatientMapper, PatientMapper>();
+    builder.Services.AddScoped<IReportService, ReportService>();
 
     var app = builder.Build();
 

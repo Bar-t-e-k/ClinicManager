@@ -10,7 +10,11 @@ public class PatientDetailsDto
     public string Pesel { get; set; } = string.Empty;
     public string? InsuranceNumber { get; set; }
 
+    public string? UserId { get; set; }
+
     public List<MedicalRecordDto> MedicalRecords { get; set; } = new List<MedicalRecordDto>();
+
+    public List<VisitDto> Visits { get; set; } = new List<VisitDto>();
 
     public string? AvatarUrl { get; set; }
 }

@@ -1,9 +1,27 @@
-﻿@model ClinicManager.Web.DTOs.PatientDetailsDto
+﻿@using System.Security.Claims
+@model ClinicManager.Web.DTOs.PatientDetailsDto
 
 <h2>Profil Pacjenta: @Model.FirstName @Model.LastName</h2>
 <p class="mb-1">PESEL: @Model.Pesel</p>
 <p class="text-muted">Nr ubezpieczenia: @(string.IsNullOrWhiteSpace(Model.InsuranceNumber) ? "—" : Model.InsuranceNumber)</p>
 
+@{
+	var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+	var isStaff = User.IsInRole("Lekarz") || User.IsInRole("Admin") || User.IsInRole("Rejestratorka");
+	var isThisPatient = Model.UserId == currentUserId;
+}
+
+@if (isStaff || isThisPatient)
+{
+	<div class="mb-4"> <a asp-controller="Reports" 
+	                      asp-action="DownloadPatientMonthlyReport" 
+	                      asp-route-patientId="@Model.Id" 
+	                      asp-route-year="@DateTime.Now.Year" 
+	                      asp-route-month="@DateTime.Now.Month" 
+	                      class="btn btn-sm btn-outline-primary"> <i class="bi bi-file-earmark-pdf"></i> Pobierz raport kosztów za ten miesiąc
+		</a>
+	</div>
+}
 <div class="card mt-4">
 	<div class="card-header">Dodaj nowy dokument</div>
 	<div class="card-body">
@@ -59,4 +77,76 @@
 	{
 		<p class="text-muted">Brak wgranych dokumentów.</p>
 	}
+</div>
+
+<hr class="my-5 border-2" />
+
+<h4 class="mb-4"><i class="bi bi-calendar-check text-primary"></i> Historia i Zaplanowane Wizyty</h4>
+
+<div class="card shadow-sm mb-5">
+	<div class="card-body p-0">
+		@if (Model.Visits != null && Model.Visits.Any())
+		{
+			<div class="table-responsive">
+				<table class="table table-hover table-striped mb-0 align-middle">
+					<thead class="table-light">
+						<tr>
+							<th class="ps-3">Data wizyty</th>
+							<th>Lekarz</th>
+							<th>Status</th>
+							<th>Koszt</th>
+							<th>Opis</th>
+							<th class="text-end pe-3">Akcje</th>
+						</tr>
+					</thead>
+					<tbody>
+						@foreach (var visit in Model.Visits)
+						{
+							<tr>
+								<td class="ps-3 fw-bold">@visit.ScheduledDate.ToString("dd.MM.yyyy HH:mm")</td>
+								<td>@visit.DoctorName</td>
+								<td>
+									@if (visit.Status == "Zaplanowana")
+									{
+										<span class="badge bg-primary">Zaplanowana</span>
+									}
+									else if (visit.Status == "Odbyta" || visit.Status == "Zakonczona")
+									{
+
+										<span class="badge bg-success">Zakończona</span>
+									}
+									else if (visit.Status == "Anulowana")
+									{
+
+										<span class="badge bg-danger">Anulowana</span>
+									}
+									else
+									{
+
+										<span class="badge bg-secondary">@visit.Status</span>
+									}
+								</td>
+								<td>@visit.TotalCost.ToString("C")</td>
+								<td class="text-truncate" style="max-width: 200px;" title="@visit.Description">
+									@(string.IsNullOrWhiteSpace(visit.Description) ? "—" : visit.Description)
+								</td>
+								<td class="text-end pe-3">
+									<a asp-controller="Visits" asp-action="Details" asp-route-id="@visit.Id" class="btn btn-sm btn-outline-secondary">
+										Szczegóły
+									</a>
+								</td>
+							</tr>
+						}
+					</tbody>
+				</table>
+			</div>
+		}
+		else
+		{
+			<div class="p-5 text-center text-muted">
+				<i class="bi bi-calendar-x fs-1 mb-2 d-block"></i>
+				Brak przypisanych wizyt dla tego pacjenta.
+			</div>
+		}
+	</div>
 </div>
