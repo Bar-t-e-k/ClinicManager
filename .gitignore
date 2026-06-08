@@ -88,3 +88,6 @@ wwwroot/uploads/*
 
 # Generated visit reports (BackgroundService)
 reports/
+
+# Ignore external libraries
+src/ClinicManager.Web/wwwroot/lib/
