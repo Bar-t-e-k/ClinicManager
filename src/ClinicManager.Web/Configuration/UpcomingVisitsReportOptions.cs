@@ -4,6 +4,9 @@ public class UpcomingVisitsReportOptions
 {
     public const string SectionName = "UpcomingVisitsReport";
 
+    /// <summary>Wyłącz usługę e-mail (np. lokalnie bez Mailtrap): user-secrets Enabled=false.</summary>
+    public bool Enabled { get; set; } = true;
+
     /// <summary>Interwał pętli usługi w tle (minuty). Dla testów ustaw 1–2.</summary>
     public int IntervalMinutes { get; set; } = 1440;
 
