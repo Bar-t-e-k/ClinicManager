@@ -4,7 +4,7 @@ namespace ClinicManager.Web.Data;
 
 public static class DataSeeder
 {
-    public static async Task SeedRolesAndAdminAsync(IServiceProvider serviceProvider, IConfiguration configuration, bool isDevelopment = true)
+    public static async Task SeedRolesAndAdminAsync(IServiceProvider serviceProvider, IConfiguration configuration)
     {
         var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
 
@@ -40,49 +40,44 @@ public static class DataSeeder
                     await userManager.AddToRoleAsync(newAdmin, "Admin");
             }
 
-            // Lekarz i rejestratorka testowa — tylko w Development
-            if (isDevelopment)
+            // Lekarz
+            var doctorEmail = "lekarz@clinic.com";
+            if (await userManager.FindByEmailAsync(doctorEmail) == null)
             {
-                var doctorEmail = "lekarz@clinic.com";
-                if (await userManager.FindByEmailAsync(doctorEmail) == null)
+                var newDoctor = new IdentityUser
                 {
-                    var newDoctor = new IdentityUser
-                    {
-                        UserName = doctorEmail,
-                        Email = doctorEmail,
-                        EmailConfirmed = true
-                    };
+                    UserName = doctorEmail,
+                    Email = doctorEmail,
+                    EmailConfirmed = true
+                };
 
-                    string doctorPassword = configuration["SeedData:DoctorPassword"] ??
-                                           throw new InvalidOperationException("Hasło lekarza nie zostało skonfigurowane w User Secrets!");
+                string doctorPassword = configuration["SeedData:DoctorPassword"] ??
+                                       throw new InvalidOperationException("Hasło lekarza nie zostało skonfigurowane w User Secrets!");
 
-                    var result = await userManager.CreateAsync(newDoctor, doctorPassword);
-                    if (result.Succeeded)
-                        await userManager.AddToRoleAsync(newDoctor, "Lekarz");
-                }
+                var result = await userManager.CreateAsync(newDoctor, doctorPassword);
+                if (result.Succeeded)
+                    await userManager.AddToRoleAsync(newDoctor, "Lekarz");
             }
 
-            if (isDevelopment)
+            // Rejestratorka
+            var regEmail = "rejestracja@clinic.com";
+            if (await userManager.FindByEmailAsync(regEmail) == null)
             {
-                var regEmail = "rejestracja@clinic.com";
-                if (await userManager.FindByEmailAsync(regEmail) == null)
+                var newReg = new IdentityUser
                 {
-                    var newReg = new IdentityUser
-                    {
-                        UserName = regEmail,
-                        Email = regEmail,
-                        EmailConfirmed = true
-                    };
+                    UserName = regEmail,
+                    Email = regEmail,
+                    EmailConfirmed = true
+                };
 
-                    string regPassword = configuration["SeedData:RegPassword"] ??
-                                            throw new InvalidOperationException("Hasło rejestratorki nie zostało skonfigurowane w User Secrets!");
+                string regPassword = configuration["SeedData:RegPassword"] ??
+                                        throw new InvalidOperationException("Hasło rejestratorki nie zostało skonfigurowane w User Secrets!");
 
-                    var result = await userManager.CreateAsync(newReg, regPassword);
-                    if (result.Succeeded)
-                        await userManager.AddToRoleAsync(newReg, "Rejestratorka");
-                }
+                var result = await userManager.CreateAsync(newReg, regPassword);
+                if (result.Succeeded)
+                    await userManager.AddToRoleAsync(newReg, "Rejestratorka");
             }
-
+            
             logger.LogInformation("Pomyślnie wykonano seedowanie bazy danych.");
         }
         catch (Exception ex)

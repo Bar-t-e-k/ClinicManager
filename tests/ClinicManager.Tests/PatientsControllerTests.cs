@@ -147,4 +147,61 @@ public class PatientsControllerTests
         _mockFileStorage.Verify(s => s.SaveFileAsync(mockFile.Object, It.IsAny<string>()), Times.Once);
         _mockService.Verify(s => s.AddMedicalRecordAsync(patientId, validFileName, fakeSavedPath), Times.Once);
     }
+
+    [Fact]
+    public void Create_Get_ReturnsViewResult()
+    {
+        // Act
+        var result = _controller.Create();
+
+        // Assert
+        var viewResult = Assert.IsType<ViewResult>(result);
+        Assert.IsType<CreateUpdatePatientDto>(viewResult.Model);
+    }
+
+    [Fact]
+    public async Task Create_Post_ReturnsRedirectAndCallsService_WhenModelIsValid()
+    {
+        // Arrange
+        var dto = new CreateUpdatePatientDto { FirstName = "Jan", LastName = "Kowalski", Pesel = "12345678901" };
+        _mockService.Setup(s => s.CreatePatientAsync(dto)).ReturnsAsync((1, null));
+
+        // Act
+        var result = await _controller.Create(dto);
+
+        // Assert
+        var redirectResult = Assert.IsType<RedirectToActionResult>(result);
+        Assert.Equal("Index", redirectResult.ActionName);
+        Assert.Equal("Pacjent został dodany.", _controller.TempData["Success"]);
+        _mockService.Verify(s => s.CreatePatientAsync(dto), Times.Once);
+    }
+
+    [Fact]
+    public async Task Details_ReturnsNotFound_WhenPatientDoesNotExist()
+    {
+        // Arrange
+        _mockService.Setup(s => s.GetPatientDetailsAsync(It.IsAny<int>())).ReturnsAsync((PatientDetailsDto?)null);
+
+        // Act
+        var result = await _controller.Details(999);
+
+        // Assert
+        Assert.IsType<NotFoundResult>(result);
+    }
+
+    [Fact]
+    public async Task Delete_ReturnsRedirect_WhenDeletionIsSuccessful()
+    {
+        // Arrange
+        _mockService.Setup(s => s.DeletePatientAsync(1)).ReturnsAsync(true);
+
+        // Act
+        var result = await _controller.Delete(1);
+
+        // Assert
+        var redirectResult = Assert.IsType<RedirectToActionResult>(result);
+        Assert.Equal("Index", redirectResult.ActionName);
+        Assert.Equal("Pacjent oraz powiązane pliki zostały pomyślnie usunięte.", _controller.TempData["Success"]);
+        _mockService.Verify(s => s.DeletePatientAsync(1), Times.Once);
+    }
 }

@@ -76,15 +76,13 @@ try
 
     var app = builder.Build();
 
-    if (app.Environment.IsDevelopment())
+    app.UseSwagger();
+    app.UseSwaggerUI(options =>
     {
-        app.UseSwagger();
-        app.UseSwaggerUI(options =>
-        {
-            options.SwaggerEndpoint("/swagger/v1/swagger.json", "ClinicManager API v1");
-        });
-    }
-    else
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "ClinicManager API v1");
+    });
+
+    if (!app.Environment.IsDevelopment())
     {
         app.UseExceptionHandler("/Home/Error");
         app.UseHsts();
@@ -96,6 +94,7 @@ try
     app.UseAuthentication();
     app.UseAuthorization();
 
+    app.UseStaticFiles();
     app.MapStaticAssets();
 
     app.MapControllerRoute(

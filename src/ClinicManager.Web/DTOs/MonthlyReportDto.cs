@@ -8,7 +8,7 @@ public class MonthlyReportDto
     public int Month { get; set; }
     public DateTime GeneratedAt { get; set; } = DateTime.Now;
 
-    public List<DailyCostSummaryDto> DailySummaries { get; set; } = new();
+    public List<DailyCostSummaryDto> DailySummaries { get; set; } = [];
 
     public decimal TotalMedicationsCost => DailySummaries.Sum(x => x.MedicationsCost);
     public decimal TotalProceduresCost => DailySummaries.Sum(x => x.ProceduresCost);

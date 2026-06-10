@@ -173,7 +173,6 @@ public class PatientService : IPatientService
 
     public async Task<(bool Success, string? Error)> LinkOrCreatePatientForUserAsync(string userId, string pesel, string firstName, string lastName)
     {
-        // Konto może być powiązane tylko z jednym pacjentem.
         var alreadyLinked = await _context.Patients.AnyAsync(p => p.UserId == userId);
         if (alreadyLinked)
             return (false, "To konto jest już powiązane z pacjentem.");

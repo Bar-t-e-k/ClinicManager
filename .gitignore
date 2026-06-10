@@ -72,7 +72,6 @@ appsettings.Local.json
 
 # NBomber
 nbomber-report/
-nbomber-report.pdf
 
 # Logs
 logs/

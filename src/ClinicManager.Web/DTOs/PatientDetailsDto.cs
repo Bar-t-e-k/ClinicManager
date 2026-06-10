@@ -12,9 +12,9 @@ public class PatientDetailsDto
 
     public string? UserId { get; set; }
 
-    public List<MedicalRecordDto> MedicalRecords { get; set; } = new List<MedicalRecordDto>();
+    public List<MedicalRecordDto> MedicalRecords { get; set; } = [];
 
-    public List<VisitDto> Visits { get; set; } = new List<VisitDto>();
+    public List<VisitDto> Visits { get; set; } = [];
 
     public string? AvatarUrl { get; set; }
 }

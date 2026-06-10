@@ -29,7 +29,7 @@ public class ClinicDbContext : IdentityDbContext<IdentityUser>
         modelBuilder.Entity<VisitMedication>().HasQueryFilter(vm => !vm.Visit.IsDeleted && !vm.Visit.Patient.IsDeleted);
         modelBuilder.Entity<VisitProcedure>().HasQueryFilter(vp => !vp.Visit.IsDeleted && !vp.Visit.Patient.IsDeleted);
 
-        // Visit -> Patient (restrict delete so we don't lose history)
+        // Visit -> Patient
         modelBuilder.Entity<Visit>()
             .HasOne(v => v.Patient)
             .WithMany()
@@ -43,7 +43,7 @@ public class ClinicDbContext : IdentityDbContext<IdentityUser>
             .HasForeignKey(v => v.DoctorId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // Visit -> ClinicalNote (cascade: deleting a visit deletes its notes)
+        // Visit -> ClinicalNote
         modelBuilder.Entity<ClinicalNote>()
             .HasOne(n => n.Visit)
             .WithMany(v => v.ClinicalNotes)
@@ -63,7 +63,7 @@ public class ClinicDbContext : IdentityDbContext<IdentityUser>
             .HasForeignKey(vm => vm.MedicationId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // VisitProcedure joins (US#12)
+        // VisitProcedure joins
         modelBuilder.Entity<VisitProcedure>()
             .HasOne(vp => vp.Visit)
             .WithMany(v => v.VisitProcedures)
@@ -83,7 +83,6 @@ public class ClinicDbContext : IdentityDbContext<IdentityUser>
             .HasForeignKey(m => m.PatientId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Decimal precision
         modelBuilder.Entity<Visit>()
             .Property(v => v.TotalCost)
             .HasColumnType("decimal(10,2)");
@@ -104,13 +103,11 @@ public class ClinicDbContext : IdentityDbContext<IdentityUser>
             .Property(vp => vp.UnitCost)
             .HasColumnType("decimal(10,2)");
 
-        // US#9: wyszukiwanie po PESEL (równość / unikalność aktywnych pacjentów)
         modelBuilder.Entity<Patient>()
             .HasIndex(p => p.Pesel)
             .IsUnique()
             .HasFilter("[IsDeleted] = 0");
 
-        // US#9: filtrowanie wizyt po lekarzu + sortowanie po dacie
         modelBuilder.Entity<Visit>()
             .HasIndex(v => new { v.DoctorId, v.ScheduledDate })
             .HasFilter("[IsDeleted] = 0");
