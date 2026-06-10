@@ -196,7 +196,7 @@ public class VisitService : IVisitService
             Status = GetStatusDisplay(v.Status),
             TotalCost = v.TotalCost,
             MedicationCount = v.VisitMedications.Count
-        }).ToList(); ;
+        }).ToList();
     }
 
     public async Task<bool> AddClinicalNoteAsync(int visitId, CreateClinicalNoteDto dto)

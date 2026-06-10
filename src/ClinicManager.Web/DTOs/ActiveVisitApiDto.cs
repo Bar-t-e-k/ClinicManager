@@ -2,7 +2,8 @@ namespace ClinicManager.Web.DTOs;
 
 /// <summary>
 /// Zanonimizowane DTO dla endpointu wydajnościowego GET /api/visits/active.
-/// Zabezpiecza wrażliwe dane przed wyciekiem na publicznym endpoincie.
+/// Zapytanie w bazie nadal łączy wizyty z pacjentem i lekarzem (JOIN), ale odpowiedź API
+/// zawiera wyłącznie identyfikatory – bez danych osobowych (PII).
 /// </summary>
 public class ActiveVisitApiDto
 {

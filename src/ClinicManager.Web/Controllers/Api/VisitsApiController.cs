@@ -21,10 +21,11 @@ public class VisitsApiController : ControllerBase
     }
 
     /// <summary>
-    /// Zwraca aktywne wizyty (Zaplanowana, Potwierdzona, W trakcie) z danymi pacjenta i lekarza.
+    /// Zwraca aktywne wizyty (Zaplanowana, Potwierdzona, W trakcie) – odpowiedź zanonimizowana (tylko ID).
     /// </summary>
     /// <remarks>
-    /// Endpoint dedykowany do testów obciążeniowych (NBomber). Wykonuje zapytanie z JOIN-ami do bazy.
+    /// Endpoint dedykowany do testów obciążeniowych (NBomber). Wykonuje zapytanie z JOIN-ami do bazy,
+    /// ale nie zwraca danych osobowych pacjenta ani lekarza.
     /// </remarks>
     [HttpGet("active")]
     [AllowAnonymous]

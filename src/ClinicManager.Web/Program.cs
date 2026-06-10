@@ -22,7 +22,11 @@ try
     // 1. Rejestracja kontekstu bazy danych z użyciem SQL Server
     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
     builder.Services.AddDbContext<ClinicDbContext>(options =>
-        options.UseSqlServer(connectionString));
+    {
+        options.UseSqlServer(connectionString);
+        if (builder.Configuration.GetValue("EfCore:LogSqlToConsole", false))
+            options.LogTo(Console.WriteLine, Microsoft.Extensions.Logging.LogLevel.Information);
+    });
 
     // 2. Rejestracja systemu Identity
     builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
@@ -47,7 +51,8 @@ try
 
     builder.Services.Configure<UpcomingVisitsReportOptions>(
         builder.Configuration.GetSection(UpcomingVisitsReportOptions.SectionName));
-    builder.Services.AddHostedService<UpcomingVisitsReportBackgroundService>();
+    if (builder.Configuration.GetValue("UpcomingVisitsReport:Enabled", true))
+        builder.Services.AddHostedService<UpcomingVisitsReportBackgroundService>();
 
     // 4. Rejestracja kontrolerów oraz dodanie globalnego filtra wyjątków
     builder.Services.AddControllersWithViews(options =>
@@ -118,6 +123,11 @@ try
             diLogger.LogError(ex, "Błąd podczas seedowania bazy danych.");
         }
     }
+
+    var startupLogger = app.Services.GetRequiredService<ILogger<Program>>();
+    startupLogger.LogInformation(
+        "Aplikacja działa. Urls: {Urls} | Swagger: /swagger",
+        string.Join(", ", app.Urls));
 
     app.Run();
 }

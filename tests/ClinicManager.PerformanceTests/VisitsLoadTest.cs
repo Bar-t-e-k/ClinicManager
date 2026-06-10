@@ -17,7 +17,7 @@ public static class VisitsLoadTest
     {
         baseUrl = baseUrl.TrimEnd('/');
         var endpoint = $"{baseUrl}/api/visits/active";
-        pdfOutputPath ??= ResolveDefaultPdfPath();
+        pdfOutputPath ??= ReportPaths.NbomberReport;
 
         Console.WriteLine($"NBomber – test endpointu: GET {endpoint}");
         Console.WriteLine($"Scenariusz: {ConcurrentUsers} użytkowników równolegle, {TotalRequests} żądań łącznie.");
@@ -63,18 +63,5 @@ public static class VisitsLoadTest
         Console.WriteLine($"Raport HTML/TXT: {Path.GetFullPath("nbomber-report")}");
 
         return pdfOutputPath;
-    }
-
-    private static string ResolveDefaultPdfPath()
-    {
-        var dir = Directory.GetCurrentDirectory();
-        while (dir != null)
-        {
-            if (File.Exists(Path.Combine(dir, "ClinicManager.slnx")))
-                return Path.Combine(dir, "nbomber-report.pdf");
-            dir = Directory.GetParent(dir)?.FullName;
-        }
-
-        return Path.Combine(Directory.GetCurrentDirectory(), "nbomber-report.pdf");
     }
 }
