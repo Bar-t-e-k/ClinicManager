@@ -39,7 +39,7 @@ Projekt wykorzystuje MS SQL Server uruchamiany w kontenerze Docker.
 Aby postawić bazę danych lokalnie, upewnij się, że masz zainstalowanego [Docker Desktop](https://www.docker.com/products/docker-desktop/), a następnie uruchom poniższą komendę w terminalu:
 
 ```bash
-docker run -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=ClinicAdmin!2026" -p 1433:1433 --name clinic-sql -d [mcr.microsoft.com/mssql/server:2022-latest](https://mcr.microsoft.com/mssql/server:2022-latest)
+docker run -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=ClinicAdmin!2026" -p 1433:1433 --name clinic-sql -d mcr.microsoft.com/mssql/server:2022-latest
 ```
 
 Oczywiście nazwę kontenera, hasło i port możesz dostosować do swoich potrzeb, ale pamiętaj, aby zaktualizować te dane również w `user-secrets` (patrz sekcja poniżej).
@@ -63,6 +63,10 @@ dotnet user-secrets set "SeedData:RegPassword" "Rej123!" --project src/ClinicMan
 4. Uruchom aplikację: 
 ```bash
    dotnet run --project src/ClinicManager.Web
+```
+5. Wpisz następujący adres w przeglądarce: 
+```bash
+   http://localhost:5215
 ```
 
 ## 🔐 Dane do logowania (Seed Data)
