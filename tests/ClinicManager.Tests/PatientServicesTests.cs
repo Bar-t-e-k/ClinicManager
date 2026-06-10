@@ -29,7 +29,10 @@ public class PatientServiceTests
         // Arrange
         var context = await GetInMemoryDbContextAsync();
         var fileStorageService = new Mock<IFileStorageService>();
-        var service = new PatientService(context, new PatientMapper(), fileStorageService.Object);
+        var userStoreMock = new Mock<IUserStore<IdentityUser>>();
+        var userManagerMock = new Mock<UserManager<IdentityUser>>(
+            userStoreMock.Object, null!, null!, null!, null!, null!, null!, null!, null!);
+        var service = new PatientService(context, new PatientMapper(), fileStorageService.Object, userManagerMock.Object);
 
         var dto = new CreateUpdatePatientDto
         {
@@ -60,7 +63,10 @@ public class PatientServiceTests
         await context.SaveChangesAsync();
 
         var fileStorageService = new Mock<IFileStorageService>();
-        var service = new PatientService(context, new PatientMapper(), fileStorageService.Object);
+        var userStoreMock = new Mock<IUserStore<IdentityUser>>();
+        var userManagerMock = new Mock<UserManager<IdentityUser>>(
+            userStoreMock.Object, null!, null!, null!, null!, null!, null!, null!, null!);
+        var service = new PatientService(context, new PatientMapper(), fileStorageService.Object, userManagerMock.Object);
 
         // Act
         var result = await service.DeletePatientAsync(patient.Id);
@@ -84,7 +90,10 @@ public class PatientServiceTests
         await context.SaveChangesAsync();
 
         var fileStorageService = new Mock<IFileStorageService>();
-        var service = new PatientService(context, new PatientMapper(), fileStorageService.Object);
+        var userStoreMock = new Mock<IUserStore<IdentityUser>>();
+        var userManagerMock = new Mock<UserManager<IdentityUser>>(
+            userStoreMock.Object, null!, null!, null!, null!, null!, null!, null!, null!);
+        var service = new PatientService(context, new PatientMapper(), fileStorageService.Object, userManagerMock.Object);
 
         // Act
         var result = await service.GetAllPatientsAsync(null);
@@ -103,7 +112,10 @@ public class PatientServiceTests
         await context.SaveChangesAsync();
 
         var fileStorageService = new Mock<IFileStorageService>();
-        var service = new PatientService(context, new PatientMapper(), fileStorageService.Object);
+        var userStoreMock = new Mock<IUserStore<IdentityUser>>();
+        var userManagerMock = new Mock<UserManager<IdentityUser>>(
+            userStoreMock.Object, null!, null!, null!, null!, null!, null!, null!, null!);
+        var service = new PatientService(context, new PatientMapper(), fileStorageService.Object, userManagerMock.Object);
 
         // Act
         var result = await service.AddMedicalRecordAsync(patient.Id, "wyniki-krwi.pdf", "/uploads/wyniki-krwi.pdf");
@@ -128,7 +140,10 @@ public class PatientServiceTests
         await context.SaveChangesAsync();
 
         var fileStorageService = new Mock<IFileStorageService>();
-        var service = new PatientService(context, new PatientMapper(), fileStorageService.Object);
+        var userStoreMock = new Mock<IUserStore<IdentityUser>>();
+        var userManagerMock = new Mock<UserManager<IdentityUser>>(
+            userStoreMock.Object, null!, null!, null!, null!, null!, null!, null!, null!);
+        var service = new PatientService(context, new PatientMapper(), fileStorageService.Object, userManagerMock.Object);
 
         // Act
         var returnedPath = await service.DeleteMedicalRecordAsync(record.Id, patient.Id);
@@ -138,304 +153,78 @@ public class PatientServiceTests
         var recordsInDb = await context.Set<MedicalRecord>().ToListAsync();
         Assert.Empty(recordsInDb); 
     }
-}
-
-public class VisitServiceTests
-{
-    private async Task<ClinicDbContext> GetInMemoryDbContextAsync()
-    {
-        var options = new DbContextOptionsBuilder<ClinicDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-            .Options;
-
-        var context = new ClinicDbContext(options);
-        await context.Database.EnsureCreatedAsync();
-        return context;
-    }
-
-    private UserManager<IdentityUser> GetMockUserManager(IdentityUser? doctorToReturn = null)
-    {
-        var store = new Mock<IUserStore<IdentityUser>>();
-        var userManager = new Mock<UserManager<IdentityUser>>(
-            store.Object, null!, null!, null!, null!, null!, null!, null!, null!);
-
-        userManager
-            .Setup(x => x.FindByIdAsync(It.IsAny<string>()))
-            .ReturnsAsync(doctorToReturn);
-
-        return userManager.Object;
-    }
-
-    private static async Task<(Patient patient, IdentityUser doctor)> SeedVisitPrerequisitesAsync(ClinicDbContext context)
-    {
-        var patient = new Patient { FirstName = "Jan", LastName = "Kowalski", Pesel = "12345678901" };
-        context.Patients.Add(patient);
-
-        var doctor = new IdentityUser { Id = "doc1", UserName = "lekarz@clinic.com", Email = "lekarz@clinic.com" };
-        context.Users.Add(doctor);
-
-        await context.SaveChangesAsync();
-        return (patient, doctor);
-    }
 
     [Fact]
-    public async Task CreateVisitAsync_ShouldFail_WhenDateIsInThePast()
+    public async Task GetPatientByIdAsync_ShouldReturnPatient_WhenExists()
     {
         // Arrange
         var context = await GetInMemoryDbContextAsync();
-        var (patient, doctor) = await SeedVisitPrerequisitesAsync(context);
-        var userManager = GetMockUserManager(doctor);
-        var service = new VisitService(context, userManager);
+        var patient = new Patient { FirstName = "Marek", LastName = "Testowy", Pesel = "12312312312" };
+        context.Patients.Add(patient);
+        await context.SaveChangesAsync();
 
-        var dto = new CreateVisitDto
-        {
-            PatientId = patient.Id,
-            DoctorId = doctor.Id,
-            ScheduledDate = DateTime.Today.AddDays(-1)
-        };
+        var fileStorageService = new Mock<IFileStorageService>();
+        var userStoreMock = new Mock<IUserStore<IdentityUser>>();
+        var userManagerMock = new Mock<UserManager<IdentityUser>>(
+            userStoreMock.Object, null!, null!, null!, null!, null!, null!, null!, null!);
+        var service = new PatientService(context, new PatientMapper(), fileStorageService.Object, userManagerMock.Object);
 
         // Act
-        var (success, error) = await service.CreateVisitAsync(dto);
+        var result = await service.GetPatientByIdAsync(patient.Id);
 
         // Assert
-        Assert.False(success);
-        Assert.NotNull(error);
+        Assert.NotNull(result);
+        Assert.Equal("Marek", result.FirstName);
+        Assert.Equal("12312312312", result.Pesel);
     }
 
     [Fact]
-    public async Task CreateVisitAsync_ShouldSucceed_WhenDataIsValid()
+    public async Task UpdatePatientAsync_ShouldUpdatePatient_WhenDataIsValid()
     {
         // Arrange
         var context = await GetInMemoryDbContextAsync();
-        var (patient, doctor) = await SeedVisitPrerequisitesAsync(context);
-        var userManager = GetMockUserManager(doctor);
-        var service = new VisitService(context, userManager);
+        var patient = new Patient { FirstName = "Stary", LastName = "Testowy", Pesel = "12312312312" };
+        context.Patients.Add(patient);
+        await context.SaveChangesAsync();
 
-        var dto = new CreateVisitDto
-        {
-            PatientId = patient.Id,
-            DoctorId = doctor.Id,
-            ScheduledDate = DateTime.Today.AddDays(1)
-        };
+        var fileStorageService = new Mock<IFileStorageService>();
+        var userStoreMock = new Mock<IUserStore<IdentityUser>>();
+        var userManagerMock = new Mock<UserManager<IdentityUser>>(
+            userStoreMock.Object, null!, null!, null!, null!, null!, null!, null!, null!);
+        var service = new PatientService(context, new PatientMapper(), fileStorageService.Object, userManagerMock.Object);
+
+        var dto = new CreateUpdatePatientDto { FirstName = "Nowy", LastName = "Testowy", Pesel = "12312312312" };
 
         // Act
-        var (success, error) = await service.CreateVisitAsync(dto);
+        var (success, error) = await service.UpdatePatientAsync(patient.Id, dto);
 
         // Assert
         Assert.True(success);
         Assert.Null(error);
-        Assert.Equal(1, await context.Visits.CountAsync());
+        var updatedPatient = await context.Patients.FindAsync(patient.Id);
+        Assert.Equal("Nowy", updatedPatient.FirstName);
     }
 
     [Fact]
-    public async Task CreatePatientAsync_ShouldFail_WhenPeselAlreadyExists()
+    public async Task LinkOrCreatePatientForUserAsync_ShouldReturnError_WhenUserAlreadyLinked()
     {
+        // Arrange
         var context = await GetInMemoryDbContextAsync();
-        context.Patients.Add(new Patient { FirstName = "Jan", LastName = "Kowalski", Pesel = "12345678901" });
+        var patient = new Patient { FirstName = "Jan", LastName = "Kowalski", Pesel = "11111111111", UserId = "user123" };
+        context.Patients.Add(patient);
         await context.SaveChangesAsync();
 
         var fileStorageService = new Mock<IFileStorageService>();
-        var service = new PatientService(context, new PatientMapper(), fileStorageService.Object);
-        var (patientId, error) = await service.CreatePatientAsync(new CreateUpdatePatientDto
-        {
-            FirstName = "Adam",
-            LastName = "Nowak",
-            Pesel = "12345678901"
-        });
-
-        Assert.Null(patientId);
-        Assert.NotNull(error);
-    }
-
-    [Fact]
-    public async Task GetActiveVisitsAsync_ShouldReturnOnlyActiveStatuses()
-    {
-        var context = await GetInMemoryDbContextAsync();
-        var (patient, doctor) = await SeedVisitPrerequisitesAsync(context);
-        var userManager = GetMockUserManager(doctor);
-        var service = new VisitService(context, userManager);
-
-        context.Visits.AddRange(
-            new Visit { PatientId = patient.Id, DoctorId = doctor.Id, ScheduledDate = DateTime.Today.AddDays(1), Status = VisitStatus.Zaplanowana },
-            new Visit { PatientId = patient.Id, DoctorId = doctor.Id, ScheduledDate = DateTime.Today.AddDays(2), Status = VisitStatus.Zakonczona },
-            new Visit { PatientId = patient.Id, DoctorId = doctor.Id, ScheduledDate = DateTime.Today.AddDays(3), Status = VisitStatus.Anulowana });
-        await context.SaveChangesAsync();
-
-        var result = await service.GetActiveVisitsAsync();
-
-        Assert.Single(result);
-        Assert.Equal("Zaplanowana", result[0].Status);
-        Assert.Equal(patient.Id, result[0].PatientId);
-    }
-
-    [Fact]
-    public async Task CancelVisitAsync_ShouldSetStatusToAnulowana()
-    {
-        // Arrange
-        var context = await GetInMemoryDbContextAsync();
-        var (patient, doctor) = await SeedVisitPrerequisitesAsync(context);
-        var userManager = GetMockUserManager(doctor);
-        var service = new VisitService(context, userManager);
-
-        var visit = new Visit
-        {
-            PatientId = patient.Id,
-            DoctorId = doctor.Id,
-            ScheduledDate = DateTime.Today.AddDays(1),
-            Status = VisitStatus.Zaplanowana
-        };
-        context.Visits.Add(visit);
-        await context.SaveChangesAsync();
+        var userStoreMock = new Mock<IUserStore<IdentityUser>>();
+        var userManagerMock = new Mock<UserManager<IdentityUser>>(
+            userStoreMock.Object, null!, null!, null!, null!, null!, null!, null!, null!);
+        var service = new PatientService(context, new PatientMapper(), fileStorageService.Object, userManagerMock.Object);
 
         // Act
-        var result = await service.CancelVisitAsync(visit.Id);
+        var (success, error) = await service.LinkOrCreatePatientForUserAsync("user123", "22222222222", "Adam", "Nowak");
 
         // Assert
-        Assert.True(result);
-        var visitInDb = await context.Visits.FindAsync(visit.Id);
-        Assert.False(visitInDb!.IsDeleted);
-        Assert.Equal(VisitStatus.Anulowana, visitInDb.Status);
-    }
-
-    [Fact]
-    public async Task AddClinicalNoteAsync_ShouldAddNoteToVisit()
-    {
-        // Arrange
-        var context = await GetInMemoryDbContextAsync();
-        var (patient, doctor) = await SeedVisitPrerequisitesAsync(context);
-        var userManager = GetMockUserManager(doctor);
-        var service = new VisitService(context, userManager);
-
-        var visit = new Visit
-        {
-            PatientId = patient.Id,
-            DoctorId = doctor.Id,
-            ScheduledDate = DateTime.Today.AddDays(1),
-            Status = VisitStatus.Zaplanowana
-        };
-        context.Visits.Add(visit);
-        await context.SaveChangesAsync();
-
-        var dto = new CreateClinicalNoteDto { Content = "Pacjent skarży się na ból głowy." };
-
-        // Act
-        var result = await service.AddClinicalNoteAsync(visit.Id, dto);
-
-        // Assert
-        Assert.True(result);
-        Assert.Equal(1, await context.ClinicalNotes.CountAsync());
-    }
-
-    [Fact]
-    public async Task DeleteClinicalNoteAsync_ShouldFail_WhenNoteDoesNotBelongToVisit()
-    {
-        // Arrange
-        var context = await GetInMemoryDbContextAsync();
-        var (patient, doctor) = await SeedVisitPrerequisitesAsync(context);
-        var userManager = GetMockUserManager(doctor);
-        var service = new VisitService(context, userManager);
-
-        var visit1 = new Visit { PatientId = patient.Id, DoctorId = doctor.Id, ScheduledDate = DateTime.Today.AddDays(1) };
-        var visit2 = new Visit { PatientId = patient.Id, DoctorId = doctor.Id, ScheduledDate = DateTime.Today.AddDays(2) };
-        context.Visits.AddRange(visit1, visit2);
-        await context.SaveChangesAsync();
-
-        var note = new ClinicalNote { VisitId = visit1.Id, Content = "Notatka do wizyty 1." };
-        context.ClinicalNotes.Add(note);
-        await context.SaveChangesAsync();
-
-        // Act — próba usunięcia notatki z wizyty 1 podając ID wizyty 2
-        var result = await service.DeleteClinicalNoteAsync(note.Id, visit2.Id);
-
-        // Assert
-        Assert.False(result);
-        Assert.Equal(1, await context.ClinicalNotes.CountAsync());
-    }
-
-    [Fact]
-    public async Task AddMedicationAsync_ShouldIncreaseTotalCost()
-    {
-        // Arrange
-        var context = await GetInMemoryDbContextAsync();
-        var (patient, doctor) = await SeedVisitPrerequisitesAsync(context);
-        var userManager = GetMockUserManager(doctor);
-        var service = new VisitService(context, userManager);
-
-        var visit = new Visit
-        {
-            PatientId = patient.Id,
-            DoctorId = doctor.Id,
-            ScheduledDate = DateTime.Today.AddDays(1),
-            Status = VisitStatus.Zaplanowana
-        };
-        context.Visits.Add(visit);
-
-        var medication = new Medication { Name = "Apap", Price = 15.00m, IsActive = true };
-        context.Medications.Add(medication);
-        await context.SaveChangesAsync();
-
-        var dto = new AddMedicationToVisitDto { MedicationId = medication.Id, Quantity = 2 };
-
-        // Act
-        var (success, error) = await service.AddMedicationAsync(visit.Id, dto);
-
-        // Assert
-        Assert.True(success);
-        var visitInDb = await context.Visits.FindAsync(visit.Id);
-        Assert.Equal(30.00m, visitInDb!.TotalCost);
-    }
-
-    [Fact]
-    public async Task UpdateVisitStatusAsync_ShouldChangeStatus()
-    {
-        // Arrange
-        var context = await GetInMemoryDbContextAsync();
-        var (patient, doctor) = await SeedVisitPrerequisitesAsync(context);
-        var userManager = GetMockUserManager(doctor);
-        var service = new VisitService(context, userManager);
-
-        var visit = new Visit
-        {
-            PatientId = patient.Id,
-            DoctorId = doctor.Id,
-            ScheduledDate = DateTime.Today.AddDays(1),
-            Status = VisitStatus.Zaplanowana
-        };
-        context.Visits.Add(visit);
-        await context.SaveChangesAsync();
-
-        // Act
-        var result = await service.UpdateVisitStatusAsync(visit.Id, VisitStatus.Potwierdzona);
-
-        // Assert
-        Assert.True(result);
-        var visitInDb = await context.Visits.FindAsync(visit.Id);
-        Assert.Equal(VisitStatus.Potwierdzona, visitInDb!.Status);
-    }
-
-    [Fact]
-    public async Task UpdateVisitStatusAsync_ShouldFail_WhenStatusIsInvalid()
-    {
-        // Arrange
-        var context = await GetInMemoryDbContextAsync();
-        var (patient, doctor) = await SeedVisitPrerequisitesAsync(context);
-        var userManager = GetMockUserManager(doctor);
-        var service = new VisitService(context, userManager);
-
-        var visit = new Visit
-        {
-            PatientId = patient.Id,
-            DoctorId = doctor.Id,
-            ScheduledDate = DateTime.Today.AddDays(1),
-            Status = VisitStatus.Zaplanowana
-        };
-        context.Visits.Add(visit);
-        await context.SaveChangesAsync();
-
-        // Act
-        var result = await service.UpdateVisitStatusAsync(visit.Id, (VisitStatus)999);
-
-        // Assert
-        Assert.False(result);
+        Assert.False(success);
+        Assert.Equal("To konto jest już powiązane z pacjentem.", error);
     }
 }

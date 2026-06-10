@@ -1,5 +1,4 @@
-﻿// ── VisitDto.cs ────────────────────────────────────────────────────────────
-namespace ClinicManager.Web.DTOs;
+﻿namespace ClinicManager.Web.DTOs;
 
 public class VisitDto
 {

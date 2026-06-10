@@ -4,18 +4,14 @@
 }
 
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h2>Katalog leków</h2>
-    <a asp-action="Create" class="btn btn-primary">
-        <i class="bi bi-plus-circle"></i> Dodaj lek
-    </a>
+	<h2>Katalog leków</h2>
+	@if (User.IsInRole("Admin") || User.IsInRole("Rejestratorka"))
+	{
+		<a asp-action="Create" class="btn btn-primary">
+			<i class="bi bi-plus-circle"></i> Dodaj lek
+		</a>
+	}
 </div>
-
-@if (TempData["Success"] != null)
-{
-    <div class="alert alert-success alert-dismissible fade show">
-        @TempData["Success"] <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-}
 
 <div class="table-responsive">
     <table class="table table-hover table-bordered align-middle">
@@ -25,7 +21,10 @@
                 <th>Opis</th>
                 <th class="text-end">Cena</th>
                 <th class="text-center">Status</th>
-                <th>Akcje</th>
+                @if (User.IsInRole("Admin") || User.IsInRole("Rejestratorka"))
+                {
+                    <th>Akcje</th>
+                }
             </tr>
         </thead>
         <tbody>
@@ -45,9 +44,12 @@
                             <span class="badge bg-secondary">Nieaktywny</span>
                         }
                     </td>
-                    <td>
-                        <a asp-action="Edit" asp-route-id="@med.Id" class="btn btn-sm btn-outline-primary">Edytuj</a>
-                    </td>
+                    @if (User.IsInRole("Admin") || User.IsInRole("Rejestratorka"))
+                    {
+	                    <td>
+	                    <a asp-action="Edit" asp-route-id="@med.Id" class="btn btn-sm btn-outline-primary">Edytuj</a>
+	                    </td>
+                    }
                 </tr>
             }
             @if (!Model.Any())

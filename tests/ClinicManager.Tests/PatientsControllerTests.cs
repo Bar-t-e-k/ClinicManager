@@ -1,12 +1,10 @@
 ﻿using ClinicManager.Web.Controllers;
 using ClinicManager.Web.DTOs;
 using ClinicManager.Web.Services;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Moq;
-using Xunit;
 
 namespace ClinicManager.Tests;
 
@@ -146,5 +144,164 @@ public class PatientsControllerTests
 
         _mockFileStorage.Verify(s => s.SaveFileAsync(mockFile.Object, It.IsAny<string>()), Times.Once);
         _mockService.Verify(s => s.AddMedicalRecordAsync(patientId, validFileName, fakeSavedPath), Times.Once);
+    }
+
+    [Fact]
+    public void Create_Get_ReturnsViewResult()
+    {
+        // Act
+        var result = _controller.Create();
+
+        // Assert
+        var viewResult = Assert.IsType<ViewResult>(result);
+        Assert.IsType<CreateUpdatePatientDto>(viewResult.Model);
+    }
+
+    [Fact]
+    public async Task Create_Post_ReturnsRedirectAndCallsService_WhenModelIsValid()
+    {
+        // Arrange
+        var dto = new CreateUpdatePatientDto { FirstName = "Jan", LastName = "Kowalski", Pesel = "12345678901" };
+        _mockService.Setup(s => s.CreatePatientAsync(dto)).ReturnsAsync((1, null));
+
+        // Act
+        var result = await _controller.Create(dto);
+
+        // Assert
+        var redirectResult = Assert.IsType<RedirectToActionResult>(result);
+        Assert.Equal("Index", redirectResult.ActionName);
+        Assert.Equal("Pacjent został dodany.", _controller.TempData["Success"]);
+        _mockService.Verify(s => s.CreatePatientAsync(dto), Times.Once);
+    }
+
+    [Fact]
+    public async Task Details_ReturnsNotFound_WhenPatientDoesNotExist()
+    {
+        // Arrange
+        _mockService.Setup(s => s.GetPatientDetailsAsync(It.IsAny<int>())).ReturnsAsync((PatientDetailsDto?)null);
+
+        // Act
+        var result = await _controller.Details(999);
+
+        // Assert
+        Assert.IsType<NotFoundResult>(result);
+    }
+
+    [Fact]
+    public async Task Delete_ReturnsRedirect_WhenDeletionIsSuccessful()
+    {
+        // Arrange
+        _mockService.Setup(s => s.DeletePatientAsync(1)).ReturnsAsync(true);
+
+        // Act
+        var result = await _controller.Delete(1);
+
+        // Assert
+        var redirectResult = Assert.IsType<RedirectToActionResult>(result);
+        Assert.Equal("Index", redirectResult.ActionName);
+        Assert.Equal("Pacjent oraz powiązane pliki zostały pomyślnie usunięte.", _controller.TempData["Success"]);
+        _mockService.Verify(s => s.DeletePatientAsync(1), Times.Once);
+    }
+
+    [Fact]
+    public async Task Delete_ReturnsNotFound_WhenPatientDoesNotExist()
+    {
+        // Arrange
+        _mockService.Setup(s => s.DeletePatientAsync(99)).ReturnsAsync(false);
+
+        // Act
+        var result = await _controller.Delete(99);
+
+        // Assert
+        Assert.IsType<NotFoundResult>(result);
+    }
+
+    [Fact]
+    public async Task Edit_Get_ReturnsNotFound_WhenPatientDoesNotExist()
+    {
+        // Arrange
+        _mockService.Setup(s => s.GetPatientByIdAsync(99)).ReturnsAsync((PatientDto?)null);
+
+        // Act
+        var result = await _controller.Edit(99);
+
+        // Assert
+        Assert.IsType<NotFoundResult>(result);
+    }
+
+    [Fact]
+    public async Task Edit_Get_ReturnsViewResult_WhenPatientExists()
+    {
+        // Arrange
+        var patient = new PatientDto { Id = 1, FirstName = "Jan", LastName = "Kowalski" };
+        _mockService.Setup(s => s.GetPatientByIdAsync(1)).ReturnsAsync(patient);
+
+        // Act
+        var result = await _controller.Edit(1);
+
+        // Assert
+        var viewResult = Assert.IsType<ViewResult>(result);
+        Assert.IsType<CreateUpdatePatientDto>(viewResult.Model);
+    }
+
+    [Fact]
+    public async Task Create_Post_ReturnsViewWithError_WhenServiceRejectsDuplicatePesel()
+    {
+        // Arrange
+        var dto = new CreateUpdatePatientDto { FirstName = "Jan", LastName = "Kowalski", Pesel = "12345678901" };
+        _mockService.Setup(s => s.CreatePatientAsync(dto)).ReturnsAsync((null, "Pacjent z tym numerem PESEL już istnieje w systemie."));
+
+        // Act
+        var result = await _controller.Create(dto);
+
+        // Assert
+        var viewResult = Assert.IsType<ViewResult>(result);
+        Assert.Same(dto, viewResult.Model);
+        Assert.True(_controller.ModelState.TryGetValue(string.Empty, out var modelState));
+        Assert.Contains(modelState!.Errors, e => e.ErrorMessage == "Pacjent z tym numerem PESEL już istnieje w systemie.");
+        Assert.Null(_controller.TempData["Success"]);
+    }
+
+    [Fact]
+    public async Task Create_Post_ReturnsViewWithError_WhenServiceRejectsDuplicateInsuranceNumber()
+    {
+        // Arrange
+        var dto = new CreateUpdatePatientDto { FirstName = "Jan", LastName = "Kowalski", InsuranceNumber = "9999" };
+        _mockService.Setup(s => s.CreatePatientAsync(dto)).ReturnsAsync((null, "Pacjent z tym numerem ubezpieczenia już istnieje w systemie."));
+
+        // Act
+        var result = await _controller.Create(dto);
+
+        // Assert
+        var viewResult = Assert.IsType<ViewResult>(result);
+        Assert.Same(dto, viewResult.Model);
+
+        Assert.True(_controller.ModelState.TryGetValue(string.Empty, out var modelState));
+        Assert.Contains(modelState!.Errors, e => e.ErrorMessage == "Pacjent z tym numerem ubezpieczenia już istnieje w systemie.");
+    }
+
+    [Fact]
+    public async Task Edit_Post_ReturnsViewWithError_WhenServiceRejectsDuplicatePesel()
+    {
+        // Arrange
+        _mockService.Setup(s => s.GetPatientByIdAsync(1)).ReturnsAsync(new PatientDto
+        {
+            Id = 1,
+            FirstName = "Jan",
+            LastName = "Kowalski",
+            Pesel = "11111111111"
+        });
+        var dto = new CreateUpdatePatientDto { FirstName = "Jan", LastName = "Kowalski", Pesel = "12345678901" };
+        _mockService.Setup(s => s.UpdatePatientAsync(1, dto)).ReturnsAsync((false, "Pacjent z tym numerem PESEL już istnieje w systemie."));
+
+        // Act
+        var result = await _controller.Edit(1, dto);
+
+        // Assert
+        var viewResult = Assert.IsType<ViewResult>(result);
+        Assert.Same(dto, viewResult.Model);
+        Assert.True(_controller.ModelState.TryGetValue(string.Empty, out var modelState));
+        Assert.Contains(modelState!.Errors, e => e.ErrorMessage == "Pacjent z tym numerem PESEL już istnieje w systemie.");
+        Assert.Null(_controller.TempData["Success"]);
     }
 }

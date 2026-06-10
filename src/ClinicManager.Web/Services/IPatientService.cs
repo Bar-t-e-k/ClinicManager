@@ -25,4 +25,8 @@ public interface IPatientService
 
     /// <summary>Zwraca Id pacjenta powiązanego z danym kontem użytkownika (lub null, jeśli brak powiązania).</summary>
     Task<int?> GetPatientIdByUserIdAsync(string userId);
+
+    Task<bool> ReactivatePatientAsync(int id);
+
+    Task<IEnumerable<PatientDto>> GetDeletedPatientsAsync(string? searchTerm = null);
 }

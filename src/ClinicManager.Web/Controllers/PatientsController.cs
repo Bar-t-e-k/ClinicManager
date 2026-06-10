@@ -29,6 +29,14 @@ public class PatientsController : Controller
         return View(patients);
     }
 
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> DeletedIndex(string? searchTerm)
+    {
+        ViewData["CurrentFilter"] = searchTerm;
+        var deletedPatients = await _patientService.GetDeletedPatientsAsync(searchTerm);
+        return View(deletedPatients);
+    }
+
     [Authorize(Roles = "Admin,Rejestratorka")]
     public IActionResult Create() => View(new CreateUpdatePatientDto());
 
@@ -39,12 +47,26 @@ public class PatientsController : Controller
     {
         if (!ModelState.IsValid) return View(dto);
 
+        string? uploadedAvatarUrl = null;
         if (dto.AvatarFile != null)
         {
-            dto.AvatarUrl = await _fileStorageService.SaveFileAsync(dto.AvatarFile, "uploads/patients");
+            uploadedAvatarUrl = await _fileStorageService.SaveFileAsync(dto.AvatarFile, "uploads/patients");
+            dto.AvatarUrl = uploadedAvatarUrl;
         }
 
-        await _patientService.CreatePatientAsync(dto);
+        var (patientId, error) = await _patientService.CreatePatientAsync(dto);
+
+        if (patientId == null)
+        {
+            if (!string.IsNullOrEmpty(uploadedAvatarUrl))
+            {
+                _fileStorageService.DeleteFile(uploadedAvatarUrl);
+            }
+
+            ModelState.AddModelError(string.Empty, error ?? "Nie udało się zapisać danych pacjenta.");
+            return View(dto);
+        }
+
         TempData["Success"] = "Pacjent został dodany.";
         return RedirectToAction(nameof(Index));
     }
@@ -89,7 +111,19 @@ public class PatientsController : Controller
             dto.AvatarUrl = existingPatient.AvatarUrl;
         }
 
-        await _patientService.UpdatePatientAsync(id, dto);
+        var (success, error) = await _patientService.UpdatePatientAsync(id, dto);
+
+        if (!success)
+        {
+            if (dto.AvatarFile != null && !string.IsNullOrEmpty(dto.AvatarUrl))
+            {
+                _fileStorageService.DeleteFile(dto.AvatarUrl);
+            }
+
+            ModelState.AddModelError(string.Empty, error ?? "Nie udało się zapisać danych pacjenta.");
+            return View(dto);
+        }
+
         TempData["Success"] = "Dane pacjenta zostały zaktualizowane.";
         return RedirectToAction(nameof(Index));
     }
@@ -104,6 +138,19 @@ public class PatientsController : Controller
 
         TempData["Success"] = "Pacjent oraz powiązane pliki zostały pomyślnie usunięte.";
         return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> Reactivate(int id)
+    {
+        var success = await _patientService.ReactivatePatientAsync(id);
+        if (!success) return NotFound();
+
+        TempData["Success"] = "Konto pacjenta zostało pomyślnie reaktywowane i odblokowane.";
+
+        return RedirectToAction(nameof(DeletedIndex));
     }
 
     [Authorize(Roles = "Admin,Rejestratorka,Lekarz")]
