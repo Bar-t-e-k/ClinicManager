@@ -21,10 +21,10 @@
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
                     <ul class="navbar-nav flex-grow-1">
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Strona główna</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Prywatność</a>
                         </li>
                         @if (User.IsInRole("Admin") || User.IsInRole("Lekarz") || User.IsInRole("Rejestratorka"))
                         {
@@ -44,6 +44,9 @@
                                 <a class="nav-link text-dark" asp-controller="Procedures" asp-action="Index">Procedury</a>
                             </li>
                         }
+                        <li class="nav-item">
+	                        <a class="nav-link text-dark" asp-area="" asp-controller="Settings" asp-action="Index">Ustawienia</a>
+                        </li>
                         <partial name="_LoginPartial" />
                     </ul>
                 </div>
@@ -51,14 +54,37 @@
         </nav>
     </header>
     <div class="container">
-        <main role="main" class="pb-3">
-            @RenderBody()
-        </main>
+	    <main role="main" class="pb-3">
+		    <div class="container">
+			    <main role="main" class="pb-3">
+				    @{
+					    var _success = TempData["Success"] as string;
+					    var _error   = TempData["Error"]   as string;
+				    }
+				    @if (!string.IsNullOrEmpty(_success))
+				    {
+					    <div class="alert alert-success alert-dismissible fade show mt-2" role="alert">
+						    @_success
+						    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+					    </div>
+				    }
+				    @if (!string.IsNullOrEmpty(_error))
+				    {
+					    <div class="alert alert-danger alert-dismissible fade show mt-2" role="alert">
+						    @_error
+						    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+					    </div>
+				    }
+
+				    @RenderBody()
+			    </main>
+		    </div>
+	    </main>
     </div>
 
     <footer class="border-top footer text-muted">
         <div class="container">
-            &copy; 2026 - ClinicManager.Web - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+            &copy; 2026 - ClinicManager.Web - <a asp-area="" asp-controller="Home" asp-action="Privacy">Prywatność</a>
         </div>
     </footer>
     <script src="~/lib/jquery/dist/jquery.min.js"></script>

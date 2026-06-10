@@ -1,0 +1,58 @@
+﻿@model IEnumerable<ClinicManager.Web.DTOs.PatientDto>
+@{
+    ViewData["Title"] = "Zablokowani / Usunięci Pacjenci";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="text-danger"><i class="bi bi-person-x-fill"></i> Archiwum: Usunięci Pacjenci</h2>
+    <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Wróć do Panelu Admina
+    </a>
+</div>
+
+<form asp-action="DeletedIndex" method="get" class="mb-4">
+    <div class="input-group shadow-sm">
+        <input type="text" name="searchTerm" value="@ViewData["CurrentFilter"]" class="form-control" placeholder="Szukaj po nazwisku, imieniu lub numerze PESEL..." />
+        <button type="submit" class="btn btn-danger"><i class="bi bi-search"></i> Szukaj</button>
+        <a asp-action="DeletedIndex" class="btn btn-outline-secondary">Wyczyść</a>
+    </div>
+</form>
+
+<div class="card shadow-sm border-danger">
+    <div class="card-body p-0">
+        @if (!Model.Any())
+        {
+            <div class="p-5 text-center text-muted">
+                Brak usuniętych pacjentów spełniających kryteria wyszukiwania.
+            </div>
+        }
+        else
+        {
+            <table class="table table-hover table-striped mb-0 align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Imię i Nazwisko</th>
+                        <th>PESEL</th>
+                        <th class="text-end">Akcje</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td><span class="text-muted">@item.LastName @item.FirstName</span></td>
+                            <td><span class="text-muted">@item.Pesel</span></td>
+                            <td class="text-end">
+                                <form asp-action="Reactivate" asp-route-id="@item.Id" method="post" class="d-inline">
+                                    <button type="submit" class="btn btn-success btn-sm shadow-sm" onclick="return confirm('Czy na pewno chcesz przywrócić konto pacjenta @item.FirstName @item.LastName?');">
+                                        <i class="bi bi-arrow-counterclockwise"></i> Reaktywuj konto
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>

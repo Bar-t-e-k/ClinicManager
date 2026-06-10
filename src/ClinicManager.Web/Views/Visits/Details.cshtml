@@ -1,21 +1,9 @@
 ﻿@model ClinicManager.Web.DTOs.VisitDetailsDto
 @{
     ViewData["Title"] = $"Wizyta #{Model.Id}";
+    var visitStatus = Model.Status;
     var isDoctor = User.IsInRole("Lekarz") || User.IsInRole("Admin");
-    var isRegistrar = User.IsInRole("Rejestratorka") || User.IsInRole("Admin");
-}
-
-@if (TempData["Success"] != null)
-{
-    <div class="alert alert-success alert-dismissible fade show">
-        @TempData["Success"] <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-}
-@if (TempData["Error"] != null)
-{
-    <div class="alert alert-danger alert-dismissible fade show">
-        @TempData["Error"] <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
+    var isRegistry = User.IsInRole("Rejestratorka") || User.IsInRole("Admin");
 }
 
 <!-- ═══════════════ NAGŁÓWEK WIZYTY ═══════════════ -->
@@ -63,7 +51,7 @@
                 }
                 <p><span class="badge @badgeClass fs-6">@Model.Status</span></p>
 
-                @if (isRegistrar)
+                @if (isRegistry)
                 {
                     <form asp-action="UpdateStatus" method="post" class="d-flex gap-2 align-items-end">
                         <input type="hidden" name="id" value="@Model.Id" />
@@ -81,7 +69,7 @@
 </div>
 
 <!-- ═══════════════ NOTATKI KLINICZNE (tylko personel medyczny) ═══════════════ -->
-@if (isDoctor)
+@if (isDoctor && visitStatus != "Zakończona" && visitStatus != "Anulowana")
 {
     <div class="card mb-4">
         <div class="card-header bg-light fw-semibold">📋 Notatki kliniczne</div>
@@ -149,7 +137,7 @@
                         <th class="text-end">Ilość</th>
                         <th class="text-end">Cena jedn.</th>
                         <th class="text-end">Razem</th>
-                        @if (isDoctor)
+                        @if (isDoctor && visitStatus != "Zakończona" && visitStatus != "Anulowana")
                         {
                             <th></th>
                         }
@@ -164,7 +152,7 @@
                             <td class="text-end">@med.Quantity</td>
                             <td class="text-end">@med.UnitPrice.ToString("C")</td>
                             <td class="text-end fw-semibold">@med.TotalPrice.ToString("C")</td>
-                            @if (isDoctor)
+                            @if (isDoctor && visitStatus != "Zakończona" && visitStatus != "Anulowana")
                             {
                                 <td class="text-center">
                                     <form asp-action="RemoveMedication" method="post" class="d-inline"
@@ -181,7 +169,7 @@
                     <tr class="table-secondary">
                         <td colspan="4" class="text-end fw-bold">Koszt leków:</td>
                         <td class="text-end fw-bold">@Model.Medications.Sum(m => m.TotalPrice).ToString("C")</td>
-                        @if (isDoctor)
+                        @if (isDoctor && visitStatus != "Zakończona" && visitStatus != "Anulowana")
                         {
                             <td></td>
                         }
@@ -190,7 +178,7 @@
             </table>
         }
 
-        @if (isDoctor)
+        @if (isDoctor && visitStatus != "Zakończona" && visitStatus != "Anulowana")
         {
             <form asp-action="AddMedication" method="post" class="row g-2 align-items-end">
                 <input type="hidden" name="visitId" value="@Model.Id" />
@@ -237,7 +225,7 @@
                         <th class="text-end">Ilość</th>
                         <th class="text-end">Koszt jedn.</th>
                         <th class="text-end">Razem</th>
-                        @if (isDoctor)
+                        @if (isDoctor && visitStatus != "Zakończona" && visitStatus != "Anulowana")
                         {
                             <th></th>
                         }
@@ -251,7 +239,7 @@
                             <td class="text-end">@proc.Quantity</td>
                             <td class="text-end">@proc.UnitCost.ToString("C")</td>
                             <td class="text-end fw-semibold">@proc.TotalCost.ToString("C")</td>
-                            @if (isDoctor)
+                            @if (isDoctor && visitStatus != "Zakończona" && visitStatus != "Anulowana")
                             {
                                 <td class="text-center">
                                     <form asp-action="RemoveProcedure" method="post" class="d-inline"
@@ -268,7 +256,7 @@
                     <tr class="table-secondary">
                         <td colspan="3" class="text-end fw-bold">Koszt procedur:</td>
                         <td class="text-end fw-bold">@Model.Procedures.Sum(p => p.TotalCost).ToString("C")</td>
-                        @if (isDoctor)
+                        @if (isDoctor && visitStatus != "Zakończona" && visitStatus != "Anulowana")
                         {
                             <td></td>
                         }
@@ -277,7 +265,7 @@
             </table>
         }
 
-        @if (isDoctor)
+        @if (isDoctor && visitStatus != "Zakończona" && visitStatus != "Anulowana")
         {
             <form asp-action="AddProcedure" method="post" class="row g-2 align-items-end">
                 <input type="hidden" name="visitId" value="@Model.Id" />

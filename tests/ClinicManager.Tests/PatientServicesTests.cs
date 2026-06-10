@@ -29,7 +29,10 @@ public class PatientServiceTests
         // Arrange
         var context = await GetInMemoryDbContextAsync();
         var fileStorageService = new Mock<IFileStorageService>();
-        var service = new PatientService(context, new PatientMapper(), fileStorageService.Object);
+        var userStoreMock = new Mock<IUserStore<IdentityUser>>();
+        var userManagerMock = new Mock<UserManager<IdentityUser>>(
+            userStoreMock.Object, null!, null!, null!, null!, null!, null!, null!, null!);
+        var service = new PatientService(context, new PatientMapper(), fileStorageService.Object, userManagerMock.Object);
 
         var dto = new CreateUpdatePatientDto
         {
@@ -60,7 +63,10 @@ public class PatientServiceTests
         await context.SaveChangesAsync();
 
         var fileStorageService = new Mock<IFileStorageService>();
-        var service = new PatientService(context, new PatientMapper(), fileStorageService.Object);
+        var userStoreMock = new Mock<IUserStore<IdentityUser>>();
+        var userManagerMock = new Mock<UserManager<IdentityUser>>(
+            userStoreMock.Object, null!, null!, null!, null!, null!, null!, null!, null!);
+        var service = new PatientService(context, new PatientMapper(), fileStorageService.Object, userManagerMock.Object);
 
         // Act
         var result = await service.DeletePatientAsync(patient.Id);
@@ -84,7 +90,10 @@ public class PatientServiceTests
         await context.SaveChangesAsync();
 
         var fileStorageService = new Mock<IFileStorageService>();
-        var service = new PatientService(context, new PatientMapper(), fileStorageService.Object);
+        var userStoreMock = new Mock<IUserStore<IdentityUser>>();
+        var userManagerMock = new Mock<UserManager<IdentityUser>>(
+            userStoreMock.Object, null!, null!, null!, null!, null!, null!, null!, null!);
+        var service = new PatientService(context, new PatientMapper(), fileStorageService.Object, userManagerMock.Object);
 
         // Act
         var result = await service.GetAllPatientsAsync(null);
@@ -103,7 +112,10 @@ public class PatientServiceTests
         await context.SaveChangesAsync();
 
         var fileStorageService = new Mock<IFileStorageService>();
-        var service = new PatientService(context, new PatientMapper(), fileStorageService.Object);
+        var userStoreMock = new Mock<IUserStore<IdentityUser>>();
+        var userManagerMock = new Mock<UserManager<IdentityUser>>(
+            userStoreMock.Object, null!, null!, null!, null!, null!, null!, null!, null!);
+        var service = new PatientService(context, new PatientMapper(), fileStorageService.Object, userManagerMock.Object);
 
         // Act
         var result = await service.AddMedicalRecordAsync(patient.Id, "wyniki-krwi.pdf", "/uploads/wyniki-krwi.pdf");
@@ -128,7 +140,10 @@ public class PatientServiceTests
         await context.SaveChangesAsync();
 
         var fileStorageService = new Mock<IFileStorageService>();
-        var service = new PatientService(context, new PatientMapper(), fileStorageService.Object);
+        var userStoreMock = new Mock<IUserStore<IdentityUser>>();
+        var userManagerMock = new Mock<UserManager<IdentityUser>>(
+            userStoreMock.Object, null!, null!, null!, null!, null!, null!, null!, null!);
+        var service = new PatientService(context, new PatientMapper(), fileStorageService.Object, userManagerMock.Object);
 
         // Act
         var returnedPath = await service.DeleteMedicalRecordAsync(record.Id, patient.Id);
@@ -149,7 +164,10 @@ public class PatientServiceTests
         await context.SaveChangesAsync();
 
         var fileStorageService = new Mock<IFileStorageService>();
-        var service = new PatientService(context, new PatientMapper(), fileStorageService.Object);
+        var userStoreMock = new Mock<IUserStore<IdentityUser>>();
+        var userManagerMock = new Mock<UserManager<IdentityUser>>(
+            userStoreMock.Object, null!, null!, null!, null!, null!, null!, null!, null!);
+        var service = new PatientService(context, new PatientMapper(), fileStorageService.Object, userManagerMock.Object);
 
         // Act
         var result = await service.GetPatientByIdAsync(patient.Id);
@@ -170,7 +188,10 @@ public class PatientServiceTests
         await context.SaveChangesAsync();
 
         var fileStorageService = new Mock<IFileStorageService>();
-        var service = new PatientService(context, new PatientMapper(), fileStorageService.Object);
+        var userStoreMock = new Mock<IUserStore<IdentityUser>>();
+        var userManagerMock = new Mock<UserManager<IdentityUser>>(
+            userStoreMock.Object, null!, null!, null!, null!, null!, null!, null!, null!);
+        var service = new PatientService(context, new PatientMapper(), fileStorageService.Object, userManagerMock.Object);
 
         var dto = new CreateUpdatePatientDto { FirstName = "Nowy", LastName = "Testowy", Pesel = "12312312312" };
 
@@ -194,7 +215,10 @@ public class PatientServiceTests
         await context.SaveChangesAsync();
 
         var fileStorageService = new Mock<IFileStorageService>();
-        var service = new PatientService(context, new PatientMapper(), fileStorageService.Object);
+        var userStoreMock = new Mock<IUserStore<IdentityUser>>();
+        var userManagerMock = new Mock<UserManager<IdentityUser>>(
+            userStoreMock.Object, null!, null!, null!, null!, null!, null!, null!, null!);
+        var service = new PatientService(context, new PatientMapper(), fileStorageService.Object, userManagerMock.Object);
 
         // Act
         var (success, error) = await service.LinkOrCreatePatientForUserAsync("user123", "22222222222", "Adam", "Nowak");

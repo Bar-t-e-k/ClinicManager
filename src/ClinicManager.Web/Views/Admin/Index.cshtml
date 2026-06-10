@@ -1,0 +1,60 @@
+﻿@model IEnumerable<Microsoft.AspNetCore.Identity.IdentityUser>
+@{
+    ViewData["Title"] = "Panel Administratora";
+}
+
+<div class="d-flex justify-content-between align-items-center my-4">
+    <h2>Zarządzanie Personelem Medycznym</h2>
+    <a asp-action="CreateDoctor" class="btn btn-primary">
+        <i class="bi bi-person-plus"></i> Dodaj nowego lekarza
+    </a>
+</div>
+
+<hr />
+
+<div class="card shadow-sm mt-4">
+    <div class="card-header bg-dark text-white">
+        <h5 class="mb-0">Aktywne konta lekarskie w systemie</h5>
+    </div>
+    <div class="card-body p-0">
+        @if (!Model.Any())
+        {
+            <div class="p-4 text-center text-muted">
+                Brak aktywnych kont lekarskich do wyświetlenia.
+            </div>
+        }
+        else
+        {
+            <table class="table table-hover table-striped mb-0 valign-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Nazwa użytkownika (Email)</th>
+                        <th>Status konta</th>
+                        <th class="text-end" style="width: 200px;">Akcje</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var doctor in Model)
+                    {
+	                    <tr>
+		                    <td>
+			                    <strong>@doctor.UserName</strong>
+		                    </td>
+		                    <td>
+			                    <span class="badge bg-success">Aktywny</span>
+		                    </td>
+		                    <td class="text-end">
+			                    <form asp-action="DeactivateDoctor" asp-route-id="@doctor.Id" method="post" class="d-inline">
+				                    <button type="submit" class="btn btn-danger btn-sm"
+				                            onclick="return confirm('Czy na pewno chcesz zablokować to konto lekarza? Nie będzie mógł się zalogować, ale historia wizyt zostanie zachowana.');">
+					                    <i class="bi bi-lock"></i> Zablokuj konto
+				                    </button>
+			                    </form>
+		                    </td>
+	                    </tr>
+                    }
+                    </tbody>
+            </table>
+        }
+    </div>
+</div>

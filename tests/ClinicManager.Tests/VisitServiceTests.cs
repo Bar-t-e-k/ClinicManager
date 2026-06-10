@@ -108,7 +108,10 @@ namespace ClinicManager.Tests
             await context.SaveChangesAsync();
 
             var fileStorageService = new Mock<IFileStorageService>();
-            var service = new PatientService(context, new PatientMapper(), fileStorageService.Object);
+            var userStoreMock = new Mock<IUserStore<IdentityUser>>();
+            var userManagerMock = new Mock<UserManager<IdentityUser>>(
+                userStoreMock.Object, null!, null!, null!, null!, null!, null!, null!, null!);
+            var service = new PatientService(context, new PatientMapper(), fileStorageService.Object, userManagerMock.Object);
             var (patientId, error) = await service.CreatePatientAsync(new CreateUpdatePatientDto
             {
                 FirstName = "Adam",

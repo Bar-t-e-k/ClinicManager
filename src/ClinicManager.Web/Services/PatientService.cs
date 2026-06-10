@@ -2,6 +2,7 @@
 using ClinicManager.Web.DTOs;
 using ClinicManager.Web.Mappers;
 using ClinicManager.Web.Models;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System.IO;
 
@@ -12,12 +13,14 @@ public class PatientService : IPatientService
     private readonly ClinicDbContext _context;
     private readonly IPatientMapper _mapper;
     private readonly IFileStorageService _fileStorageService;
+    private readonly UserManager<IdentityUser> _userManager;
 
-    public PatientService(ClinicDbContext context, IPatientMapper mapper, IFileStorageService fileStorageService)
+    public PatientService(ClinicDbContext context, IPatientMapper mapper, IFileStorageService fileStorageService, UserManager<IdentityUser> userManager)
     {
         _context = context;
         _mapper = mapper;
         _fileStorageService = fileStorageService;
+        _userManager = userManager;
     }
 
     public async Task<IEnumerable<PatientDto>> GetAllPatientsAsync(string? searchTerm = null)
@@ -50,6 +53,9 @@ public class PatientService : IPatientService
         if (await PeselExistsAsync(dto.Pesel))
             return (null, "Pacjent z tym numerem PESEL już istnieje w systemie.");
 
+        if (await InsuranceNumberExistsAsync(dto.InsuranceNumber))
+            return (null, "Pacjent z tym numerem ubezpieczenia już istnieje w systemie.");
+
         var patient = _mapper.CreatePatientDtoToPatient(dto);
 
         _context.Set<Patient>().Add(patient);
@@ -68,6 +74,9 @@ public class PatientService : IPatientService
         if (await PeselExistsAsync(dto.Pesel, id))
             return (false, "Pacjent z tym numerem PESEL już istnieje w systemie.");
 
+        if (await InsuranceNumberExistsAsync(dto.InsuranceNumber, id))
+            return (false, "Pacjent z tym numerem ubezpieczenia już istnieje w systemie.");
+
         _mapper.UpdatePatientFromDto(dto, patient);
         await _context.SaveChangesAsync();
 
@@ -76,8 +85,16 @@ public class PatientService : IPatientService
 
     private async Task<bool> PeselExistsAsync(string pesel, int? excludePatientId = null)
     {
-        return await _context.Patients.AnyAsync(p => 
-            p.Pesel == pesel && (excludePatientId == null || p.Id != excludePatientId));
+        return await _context.Patients.IgnoreQueryFilters().AnyAsync(p =>
+            p.Pesel == pesel && (excludePatientId == null || p.Id != excludePatientId)); ;
+    }
+
+    private async Task<bool> InsuranceNumberExistsAsync(string insuranceNumber, int? excludePatientId = null)
+    {
+        if (string.IsNullOrWhiteSpace(insuranceNumber)) return false;
+
+        return await _context.Patients.IgnoreQueryFilters().AnyAsync(p =>
+            p.InsuranceNumber == insuranceNumber && (excludePatientId == null || p.Id != excludePatientId)); ;
     }
 
     public async Task<bool> DeletePatientAsync(int id)
@@ -107,6 +124,16 @@ public class PatientService : IPatientService
                 .Select(r => r.FilePath!);
 
             filesToDelete.AddRange(documentUrls);
+        }
+
+        if (!string.IsNullOrEmpty(patient.UserId))
+        {
+            var identityUser = await _userManager.FindByIdAsync(patient.UserId);
+            if (identityUser != null)
+            {
+                await _userManager.SetLockoutEnabledAsync(identityUser, true);
+                await _userManager.SetLockoutEndDateAsync(identityUser, DateTimeOffset.MaxValue); ;
+            }
         }
 
         patient.IsDeleted = true;
@@ -221,5 +248,45 @@ public class PatientService : IPatientService
         await _context.SaveChangesAsync();
 
         return filePath;
+    }
+
+    public async Task<bool> ReactivatePatientAsync(int id)
+    {
+        var patient = await _context.Patients
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(p => p.Id == id);
+
+        if (patient == null || !patient.IsDeleted) return false;
+
+        patient.IsDeleted = false;
+
+        if (!string.IsNullOrEmpty(patient.UserId))
+        {
+            var identityUser = await _userManager.FindByIdAsync(patient.UserId);
+            if (identityUser != null)
+            {
+                await _userManager.SetLockoutEndDateAsync(identityUser, DateTimeOffset.UtcNow);
+            }
+        }
+
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<IEnumerable<PatientDto>> GetDeletedPatientsAsync(string? searchTerm = null)
+    {
+        var query = _context.Set<Patient>()
+            .IgnoreQueryFilters()
+            .Where(p => p.IsDeleted);
+
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            query = query.Where(p =>
+                p.FirstName.Contains(searchTerm) ||
+                p.LastName.Contains(searchTerm) ||
+                p.Pesel.Contains(searchTerm));
+        }
+
+        return await _mapper.QueryablePatientToPatientDto(query).ToListAsync();
     }
 }

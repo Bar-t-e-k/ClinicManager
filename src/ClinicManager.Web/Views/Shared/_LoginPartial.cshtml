@@ -1,12 +1,32 @@
+@using ClinicManager.Web.Data
 @using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
 @inject SignInManager<IdentityUser> SignInManager
 @inject UserManager<IdentityUser> UserManager
+@inject ClinicDbContext DbContext
+
+@{
+	var displayName = User.Identity?.Name ?? "Użytkownik";
+	var currentUserId = UserManager.GetUserId(User);
+
+	if (!string.IsNullOrWhiteSpace(currentUserId))
+	{
+		var patient = await DbContext.Patients
+			.AsNoTracking()
+			.FirstOrDefaultAsync(p => p.UserId == currentUserId && !p.IsDeleted);
+
+		if (patient is not null)
+		{
+			displayName = $"{patient.FirstName} {patient.LastName}";
+		}
+	}
+}
 
 <ul class="navbar-nav">
 	@if (SignInManager.IsSignedIn(User))
 	{
 		<li class="nav-item">
-			<a  class="nav-item nav-link text-dark" title="Manage">Witaj, @User.Identity?.Name!</a>
+			<a  class="nav-item nav-link text-dark" title="Manage">Witaj, @displayName!</a>
 		</li>
 		<li class="nav-item">
 			<form  class="form-inline" asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })">
