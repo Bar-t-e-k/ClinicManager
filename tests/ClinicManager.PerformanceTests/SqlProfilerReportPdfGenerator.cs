@@ -109,8 +109,8 @@ public static class SqlProfilerReportPdfGenerator
         }
         catch (IOException)
         {
-            var alt = Path.Combine(Path.GetDirectoryName(outputPath)!,
-                Path.GetFileNameWithoutExtension(outputPath) + "-final.pdf");
+            var outputDir = Path.GetDirectoryName(outputPath) ?? Directory.GetCurrentDirectory();
+            var alt = Path.Combine(outputDir, Path.GetFileNameWithoutExtension(outputPath) + "-final.pdf");
             if (File.Exists(alt)) File.Delete(alt);
             File.Move(tempPath, alt);
             Console.WriteLine($"Plik {outputPath} jest otwarty – zapisano: {alt}");

@@ -24,7 +24,7 @@ try
     builder.Services.AddDbContext<ClinicDbContext>(options =>
     {
         options.UseSqlServer(connectionString);
-        if (builder.Environment.IsDevelopment())
+        if (builder.Configuration.GetValue("EfCore:LogSqlToConsole", false))
             options.LogTo(Console.WriteLine, Microsoft.Extensions.Logging.LogLevel.Information);
     });
 
@@ -125,7 +125,9 @@ try
     }
 
     var startupLogger = app.Services.GetRequiredService<ILogger<Program>>();
-    startupLogger.LogInformation("Aplikacja działa. API: http://localhost:5215/api/visits/active | Swagger: /swagger");
+    startupLogger.LogInformation(
+        "Aplikacja działa. Urls: {Urls} | Swagger: /swagger",
+        string.Join(", ", app.Urls));
 
     app.Run();
 }
